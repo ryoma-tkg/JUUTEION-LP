@@ -8,253 +8,335 @@ import Tag from "../components/ui/Tag.astro";
 import Input from "../components/ui/Input.astro";
 ---
 
-<Layout title="Design System v2.6 (Fixed)">
-    <div class="min-h-screen pb-40 px-8 pt-20 space-y-24">
-        {/* Header */}
-        <header class="space-y-6">
+{/* isFluid=true を設定し、左右分割レイアウトを有効化 */}
+<Layout title="Design System" isFluid={true}>
+    <div class="flex flex-col lg:flex-row min-h-screen">
+        {
+            /* ==========================================
+            [LEFT COLUMN] Visual Placeholder & Nav (UI Hub Context)
+            Width is flexible (flex-1)
+           ========================================== */
+        }
+        <aside
+            class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-zinc-900"
+        >
+            {/* Placeholder Background */}
             <div
-                class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-surface/50 backdrop-blur-md"
+                class="absolute inset-0 bg-cover bg-center"
+                style="background-image: url('https://images.unsplash.com/photo-1549490349-2169b0051787?q=80&w=2000&auto=format&fit=crop'); opacity: 0.2;"
             >
-                <div class="flex gap-1">
-                    <div
-                        class="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse"
-                    >
-                    </div>
-                    <div
-                        class="w-1.5 h-1.5 rounded-full bg-accent-yellow animate-pulse delay-75"
-                    >
-                    </div>
-                    <div
-                        class="w-1.5 h-1.5 rounded-full bg-accent-red animate-pulse delay-150"
-                    >
-                    </div>
-                </div>
-                <span
-                    class="text-xs text-text-muted font-mono tracking-widest uppercase"
-                    >Components Ready</span
-                >
             </div>
-            <h1
-                class="text-4xl font-bold text-text-main tracking-tighter leading-[1.1]"
-            >
-                Matte &<br />
-                <span class="text-text-muted">Silence.</span>
-            </h1>
-            <p class="text-base text-text-muted leading-relaxed max-w-[320px]">
-                コンポーネント化されたデザインシステム。<br />
-                ここにある要素を組み合わせるだけで、<br />
-                世界観は保たれる。
-            </p>
-        </header>
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-        {/* 1. Typography */}
-        <section class="space-y-6">
-            <h2
-                class="text-xs font-mono text-text-muted/50 tracking-[0.2em] uppercase pl-1 border-l-2 border-accent-blue ml-1 pl-3"
+            {/* Content (Logo & Nav) */}
+            <div
+                class="relative z-10 w-full h-full p-16 flex flex-col justify-between items-end text-right"
             >
-                Typography
-            </h2>
-            <div class="space-y-10">
-                <div class="space-y-2 border-b border-subtle pb-8">
-                    <span class="text-xs text-text-muted/50 font-mono block"
-                        >Display</span
-                    >
-                    <p
-                        class="text-4xl font-bold text-text-main tracking-tighter leading-[1.1]"
-                    >
-                        Margin Is Luxury.
-                    </p>
-                </div>
-                <div class="space-y-2 border-b border-subtle pb-8">
-                    <span class="text-xs text-text-muted/50 font-mono block"
-                        >Heading</span
-                    >
-                    <p class="text-2xl font-bold text-text-main tracking-tight">
-                        Deep Night Launch
-                    </p>
-                </div>
-                <div class="space-y-2 border-b border-subtle pb-8">
-                    <span class="text-xs text-text-muted/50 font-mono block"
-                        >Body</span
-                    >
-                    <p
-                        class="text-base text-text-muted leading-relaxed max-w-md"
-                    >
-                        本イベントは、音楽と空間を楽しむためのラウンジパーティーです。
-                    </p>
-                </div>
-                {/* 復活させた Label / Meta */}
-                <div class="space-y-2 border-b border-subtle pb-8">
-                    <div class="flex justify-between items-end">
-                        <span class="text-xs text-text-muted/50 font-mono"
-                            >Label / Meta</span
+                <div class="mt-8">
+                    <div class="text-right drop-shadow-xl">
+                        <h1
+                            class="text-5xl font-bold tracking-tighter text-white font-sans"
                         >
-                        <span class="text-xs text-accent-blue font-mono"
-                            >12px / medium / widest</span
-                        >
+                            UI HUB <span
+                                class="block text-xl font-normal text-accent-blue tracking-[0.2em] mt-2 font-en"
+                                >V3.0 CATALOG</span
+                            >
+                        </h1>
                     </div>
-                    <p
-                        class="text-xs font-medium text-text-muted tracking-widest uppercase"
-                    >
-                        2024.12.31 / CLUB ASIA
-                    </p>
                 </div>
-            </div>
-        </section>
 
-        {/* 2. Colors */}
-        <section class="space-y-6">
-            <h2
-                class="text-xs font-mono text-text-muted/50 tracking-[0.2em] uppercase pl-1 border-l-2 border-accent-yellow ml-1 pl-3"
-            >
-                Colors
-            </h2>
-            <div class="grid grid-cols-3 gap-3">
-                {
-                    [
-                        {
-                            name: "BLUE",
-                            hex: "#0097e0",
-                            bg: "bg-accent-blue",
-                            text: "text-white",
-                        },
-                        {
-                            name: "YELLOW",
-                            hex: "#FEE100",
-                            bg: "bg-accent-yellow",
-                            text: "text-black",
-                        },
-                        {
-                            name: "RED",
-                            hex: "#e5177c",
-                            bg: "bg-accent-red",
-                            text: "text-white",
-                        },
-                    ].map((c) => (
-                        <div
-                            class={`aspect-[4/3] rounded-2xl ${c.bg} flex flex-col justify-end p-3 relative overflow-hidden group`}
+                <nav class="flex flex-col gap-5 mb-8 drop-shadow-xl">
+                    {
+                        [
+                            { label: "TYPOGRAPHY", href: "#typography" },
+                            { label: "COLORS", href: "#colors" },
+                            { label: "CARDS", href: "#cards" },
+                            { label: "BUTTONS", href: "#buttons" },
+                            { label: "FORMS", href: "#forms" },
+                        ].map((item) => (
+                            <a
+                                href={item.href}
+                                class="group flex items-center justify-end gap-3 py-1"
+                            >
+                                <span class="text-lg font-en font-bold text-white/70 group-hover:text-white transition-colors duration-300 tracking-widest">
+                                    {item.label}
+                                </span>
+                                <span class="w-0 h-[2px] bg-accent-blue group-hover:w-6 transition-all duration-300 ease-out" />
+                            </a>
+                        ))
+                    }
+                </nav>
+            </div>
+        </aside>
+
+        {
+            /* ==========================================
+            [RIGHT COLUMN] Content (Fixed Width 700px)
+           ========================================== */
+        }
+        <main
+            class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
+        >
+            <div class="w-full px-8 md:px-12 py-24 space-y-32">
+                <header class="space-y-4 pb-12 border-b border-subtle">
+                    <h1
+                        class="text-4xl font-bold text-text-main tracking-tighter leading-[1.1] font-sans"
+                    >
+                        Design System <span class="text-accent-blue font-en"
+                            >V3.0</span
                         >
+                    </h1>
+                    <p
+                        class="text-base text-text-muted leading-relaxed max-w-[320px] font-sans"
+                    >
+                        Matte & Silence コンポーネントカタログ
+                    </p>
+                </header>
+
+                {/* 1. Typography */}
+                <section id="typography" class="space-y-6">
+                    {/* New Heading Style */}
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-accent-blue rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Typography Scale
+                        </h2>
+                    </div>
+
+                    <div class="space-y-10 pl-6">
+                        <div class="space-y-2 border-b border-subtle pb-8">
                             <span
-                                class={`text-xs font-bold ${c.text} relative z-10`}
+                                class="text-xs text-text-muted/50 font-mono block font-en"
+                                >Display / Title</span
                             >
-                                {c.name}
-                            </span>
-                            <span
-                                class={`text-[10px] ${c.text} opacity-80 font-mono relative z-10`}
+                            <p
+                                class="text-4xl font-bold text-text-main tracking-tighter leading-[1.1]"
                             >
-                                {c.hex}
-                            </span>
-                            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                Margin Is Luxury.
+                            </p>
                         </div>
-                    ))
-                }
+                        <div class="space-y-2 border-b border-subtle pb-8">
+                            <span
+                                class="text-xs text-text-muted/50 font-mono block font-en"
+                                >Heading / Section</span
+                            >
+                            <p
+                                class="text-2xl font-bold text-text-main tracking-tight"
+                            >
+                                Deep Night Launch
+                            </p>
+                        </div>
+                        <div class="space-y-2 border-b border-subtle pb-8">
+                            <span
+                                class="text-xs text-text-muted/50 font-mono block font-en"
+                                >Body / Text</span
+                            >
+                            <p
+                                class="text-base text-text-muted leading-relaxed max-w-md"
+                            >
+                                本イベントは、音楽と空間を楽しむためのラウンジパーティーです。
+                            </p>
+                        </div>
+                        <div class="space-y-2 border-b border-subtle pb-8">
+                            <span
+                                class="text-xs text-text-muted/50 font-mono block font-en"
+                                >Label / Meta</span
+                            >
+                            <p
+                                class="text-xs font-medium text-text-muted tracking-widest uppercase font-en"
+                            >
+                                2024.12.31 / CLUB ASIA
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 2. Colors */}
+                <section id="colors" class="space-y-6">
+                    {/* New Heading Style */}
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-accent-yellow rounded-sm"
+                        ></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Color Palette
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 pl-6">
+                        {
+                            [
+                                {
+                                    name: "BLUE",
+                                    hex: "#0097e0",
+                                    bg: "bg-accent-blue",
+                                    text: "text-white",
+                                },
+                                {
+                                    name: "YELLOW",
+                                    hex: "#FEE100",
+                                    bg: "bg-accent-yellow",
+                                    text: "text-black",
+                                },
+                                {
+                                    name: "RED",
+                                    hex: "#e5177c",
+                                    bg: "bg-accent-red",
+                                    text: "text-white",
+                                },
+                                {
+                                    name: "SURFACE",
+                                    hex: "#18181b",
+                                    bg: "bg-surface",
+                                    text: "text-white",
+                                },
+                                {
+                                    name: "SUBTLE",
+                                    hex: "#27272a",
+                                    bg: "bg-subtle",
+                                    text: "text-white",
+                                },
+                                {
+                                    name: "TEXT-MUTED",
+                                    hex: "#a1a1aa",
+                                    bg: "bg-text-muted",
+                                    text: "text-black",
+                                },
+                            ].map((c) => (
+                                <div
+                                    class={`aspect-[4/3] rounded-2xl ${c.bg} flex flex-col justify-end p-3 relative overflow-hidden group border border-white/5`}
+                                >
+                                    <span
+                                        class={`text-sm font-bold ${c.text} relative z-10 font-en`}
+                                    >
+                                        {c.name}
+                                    </span>
+                                    <span
+                                        class={`text-[10px] ${c.text} opacity-80 font-mono relative z-10 font-en`}
+                                    >
+                                        {c.hex}
+                                    </span>
+                                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                </div>
+                            ))
+                        }
+                    </div>
+                </section>
+
+                {/* 3. Cards */}
+                <section id="cards" class="space-y-6">
+                    {/* New Heading Style */}
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-accent-red rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Cards & Lists
+                        </h2>
+                    </div>
+
+                    <div class="space-y-8 pl-6">
+                        <HeroCard
+                            title="Deep Night"
+                            subTitle="Vol.1 Launch"
+                            date="2024.12.31 SAT"
+                            time="OPEN 23:00"
+                            place="CLUB ASIA"
+                            price="¥3,500 / 1D"
+                            image="https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2000&auto=format&fit=crop"
+                        />
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <ArchiveCard
+                                title="Vol.0 Pre-Party"
+                                date="2024.10.31"
+                                place="MOGRA"
+                                image="https://images.unsplash.com/photo-1557401614-7221382ce6a9?q=80&w=800&auto=format&fit-crop"
+                            />
+                            <ArchiveCard
+                                title="Teaser Night"
+                                date="2024.08.15"
+                                place="WOMB"
+                                image="https://images.unsplash.com/photo-1563351982-c42337d40cb9?q=80&w=800&auto-format&fit-crop"
+                            />
+                        </div>
+
+                        <div class="divide-y divide-subtle">
+                            <ListItem
+                                title="DJ GUEST"
+                                subTitle="Drum'n Bass"
+                                accentColor="blue"
+                            />
+                            <ListItem
+                                title="RESIDENT"
+                                subTitle="Techno"
+                                accentColor="yellow"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                {/* 4. Buttons */}
+                <section id="buttons" class="space-y-6">
+                    {/* New Heading Style */}
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-accent-blue rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Buttons & Tags
+                        </h2>
+                    </div>
+
+                    <div class="space-y-4 pl-6">
+                        <Button variant="primary">チケットを予約</Button>
+                        <Button variant="secondary">詳しい情報を見る</Button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3 pt-6 pl-6">
+                        <Tag variant="default">Techno</Tag>
+                        <Tag variant="blue">House</Tag>
+                        <Tag variant="yellow">Bass</Tag>
+                        <Tag variant="red">SOLD OUT</Tag>
+                    </div>
+                </section>
+
+                {/* 5. Forms */}
+                <section id="forms" class="space-y-6">
+                    {/* New Heading Style */}
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-subtle rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Form Elements
+                        </h2>
+                    </div>
+
+                    <div class="space-y-4 pl-6">
+                        <Input
+                            label="Email Address"
+                            type="email"
+                            placeholder="hello@juuteion.jp"
+                        />
+                        <Input
+                            label="Message"
+                            multiline
+                            rows="3"
+                            placeholder="お問い合わせ内容..."
+                        />
+                    </div>
+                </section>
+
+                <footer class="pt-16 pb-12 border-t border-subtle text-center">
+                    <p class="text-xs text-text-muted/30 font-mono font-en">
+                        JUUTEION DESIGN SYSTEM - V3.0
+                    </p>
+                </footer>
             </div>
-        </section>
-
-        {/* 3. Cards */}
-        <section class="space-y-6">
-            <h2
-                class="text-xs font-mono text-text-muted/50 tracking-[0.2em] uppercase pl-1 border-l-2 border-accent-yellow ml-1 pl-3"
-            >
-                Cards
-            </h2>
-
-            <div class="space-y-8">
-                <HeroCard
-                    title="Deep Night"
-                    subTitle="Vol.1 Launch"
-                    date="2024.12.31 SAT"
-                    time="OPEN 23:00"
-                    place="@CLUB ASIA"
-                    price="¥3,500 / 1D"
-                    image="https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2000&auto=format&fit=crop"
-                />
-
-                <div class="grid grid-cols-2 gap-4">
-                    <ArchiveCard
-                        title="Vol.0 Pre-Party"
-                        date="2024.10.31"
-                        place="MOGRA"
-                        image="https://images.unsplash.com/photo-1557401614-7221382ce6a9?q=80&w=800&auto=format&fit=crop"
-                    />
-                    <ArchiveCard
-                        title="Teaser Night"
-                        date="2024.08.15"
-                        place="WOMB"
-                        image="https://images.unsplash.com/photo-1563351982-c42337d40cb9?q=80&w=800&auto=format&fit=crop"
-                    />
-                </div>
-            </div>
-        </section>
-
-        {/* 4. Buttons */}
-        <section class="space-y-6">
-            <h2
-                class="text-xs font-mono text-text-muted/50 tracking-[0.2em] uppercase pl-1 border-l-2 border-accent-red ml-1 pl-3"
-            >
-                Buttons
-            </h2>
-            <div class="space-y-4">
-                <Button variant="primary">チケットを予約</Button>
-                <Button variant="secondary">詳しい情報を見る</Button>
-            </div>
-        </section>
-
-        {/* 5. List Items */}
-        <section class="space-y-6">
-            <h2
-                class="text-xs font-mono text-text-muted/50 tracking-[0.2em] uppercase pl-1 border-l-2 border-accent-blue ml-1 pl-3"
-            >
-                List Items
-            </h2>
-            <div class="divide-y divide-subtle">
-                <ListItem
-                    title="DJ GUEST"
-                    subTitle="Drum'n Bass"
-                    accentColor="blue"
-                />
-                <ListItem
-                    title="RESIDENT"
-                    subTitle="Techno"
-                    accentColor="yellow"
-                />
-            </div>
-        </section>
-
-        {/* 6. Forms & Tags */}
-        <section class="space-y-6">
-            <h2
-                class="text-xs font-mono text-text-muted/50 tracking-[0.2em] uppercase pl-1 border-l-2 border-accent-blue ml-1 pl-3"
-            >
-                Forms & Tags
-            </h2>
-
-            <div class="space-y-4">
-                <Input
-                    label="Email Address"
-                    type="email"
-                    placeholder="hello@juuteion.jp"
-                />
-                <Input
-                    label="Message"
-                    multiline
-                    rows="3"
-                    placeholder="お問い合わせ内容..."
-                />
-            </div>
-
-            <div class="flex flex-wrap gap-3 pt-4">
-                <Tag variant="default">Techno</Tag>
-                <Tag variant="blue">House</Tag>
-                <Tag variant="yellow">Bass</Tag>
-                <Tag variant="red">SOLD OUT</Tag>
-            </div>
-        </section>
-
-        <footer class="pt-24 pb-12 border-t border-subtle">
-            <p class="text-xs text-text-muted/30 font-mono text-center">
-                JUUTEION DESIGN SYSTEM - Componentized
-            </p>
-        </footer>
+        </main>
     </div>
 </Layout>

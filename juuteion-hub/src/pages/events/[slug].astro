@@ -1,5 +1,5 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
@@ -204,11 +204,7 @@ const formatDate = (date: Date) => {
         class="fixed bottom-0 left-0 right-0 z-50 p-6 bg-gradient-to-t from-background via-background to-transparent"
     >
         <div class="max-w-[480px] mx-auto">
-            <Button
-                variant="primary"
-                href="#"
-                class="shadow-2xl shadow-accent-blue/20"
-            >
+            <Button variant="primary" href={`/events/${entry.slug}/ticket`}>
                 チケットを予約する
             </Button>
         </div>
