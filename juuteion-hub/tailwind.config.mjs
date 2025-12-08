@@ -16,7 +16,7 @@ export default {
                 surface: "#18181b",
                 subtle: "#27272a",
                 "text-main": "#f4f4f5",
-                "text-muted": "#a1a1aa",
+                "text-muted": "#dadae6",
                 "accent-blue": "#0097e0",
                 "accent-yellow": "#FEE100",
                 "accent-red": "#e5177c",
