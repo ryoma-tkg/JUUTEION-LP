@@ -67,3 +67,4 @@ This document outlines the step-by-step plan to transition from the current stat
   - Run `npm run build` to ensure no errors during static generation.
 - [ ] **5.2 Deployment**
   - Deploy to production environment (Vercel / Netlify / Cloudflare Pages).
+  - アハン
