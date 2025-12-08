@@ -1,0 +1,53 @@
+---
+import "@fontsource/ibm-plex-sans-jp/400.css";
+import "@fontsource/ibm-plex-sans-jp/700.css";
+import { ViewTransitions } from "astro:transitions";
+
+interface Props {
+    title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ja" class="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="description" content="獸酊音 Juu-Tei-On Event Hub" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="generator" content={Astro.generator} />
+        <title>{title} | 獸酊音</title>
+        <ViewTransitions />
+    </head>
+    <body
+        class="bg-background text-white antialiased overflow-hidden selection:bg-primary selection:text-black"
+    >
+        <div class="fixed inset-0 z-0 hidden md:block">
+            <div
+                class="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px]"
+            >
+            </div>
+            <div
+                class="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-secondary/20 rounded-full blur-[120px]"
+            >
+            </div>
+        </div>
+        <main
+            class="relative z-10 w-full max-w-[480px] mx-auto min-h-screen bg-black/80 backdrop-blur-2xl border-x border-white/5 shadow-2xl overflow-y-auto h-screen scrollbar-hide"
+        >
+            <slot />
+        </main>
+    </body>
+</html>
+
+<style is:global>
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>
