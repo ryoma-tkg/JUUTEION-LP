@@ -6,20 +6,20 @@ export default {
     theme: {
         extend: {
             fontFamily: {
+                // 基本の和文フォント (IBM Plex Sans JP)
                 sans: ["IBM Plex Sans JP", ...defaultTheme.fontFamily.sans],
+                // 欧文・数字用フォント (Montserrat) - 見出しや英語のみの箇所に使用
+                en: ["Montserrat", ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                // Pure Blackではなく、わずかに温かみや青みのあるダークグレーを使用
-                background: "#09090b", // Zinc-950: 深いマットな黒
-                surface: "#18181b",    // Zinc-900: カード背景など
-                subtle: "#27272a",     // Zinc-800: ボーダーや区切り線
-
-                // 文字色
-                "text-main": "#f4f4f5", // Zinc-100: ほぼ白
-                "text-muted": "#a1a1aa", // Zinc-400: 控えめなグレー
-
-                // Accent: 派手すぎない、知的なミントブルー
-                primary: "#2dd4bf",    // Teal-400
+                background: "#09090b",
+                surface: "#18181b",
+                subtle: "#27272a",
+                "text-main": "#f4f4f5",
+                "text-muted": "#a1a1aa",
+                "accent-blue": "#0097e0",
+                "accent-yellow": "#FEE100",
+                "accent-red": "#e5177c",
             },
         },
     },

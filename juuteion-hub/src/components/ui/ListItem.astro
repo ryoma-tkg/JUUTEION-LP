@@ -1,0 +1,44 @@
+---
+interface Props {
+    title: string;
+    subTitle: string;
+    accentColor?: "blue" | "yellow" | "red";
+}
+
+const { title, subTitle, accentColor = "blue" } = Astro.props;
+
+const colorMap = {
+    blue: "group-hover:text-accent-blue",
+    yellow: "group-hover:text-accent-yellow",
+    red: "group-hover:text-accent-red",
+};
+
+const hoverColor = colorMap[accentColor];
+---
+
+<div
+    class="py-5 flex items-center justify-between group cursor-pointer border-b border-subtle last:border-none"
+>
+    <div class="flex items-center gap-5">
+        <div
+            class="w-12 h-12 rounded-full bg-surface border border-white/10 flex items-center justify-center text-xs font-bold text-text-muted group-hover:border-white/30 transition-colors"
+        >
+            ●
+        </div>
+        <div>
+            <p
+                class={`text-base font-bold text-white ${hoverColor} transition-colors`}
+            >
+                {title}
+            </p>
+            <p class="text-xs text-text-muted tracking-wide mt-1 uppercase">
+                {subTitle}
+            </p>
+        </div>
+    </div>
+    <span
+        class={`text-xs text-subtle ${hoverColor} transition-colors opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transform duration-300`}
+    >
+        VIEW →
+    </span>
+</div>

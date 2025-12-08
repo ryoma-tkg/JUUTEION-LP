@@ -1,0 +1,129 @@
+---
+// メニュー項目
+const links = [
+    { label: "TOP", href: "#top" },
+    { label: "ABOUT", href: "#about" },
+    { label: "EVENTS", href: "#events" },
+    { label: "SOCIAL", href: "#social" },
+];
+---
+
+{/* Menu Button (Fixed Right-Top) */}
+<button
+    id="menu-toggle"
+    class="fixed top-6 right-6 lg:top-8 lg:right-8 z-[100] w-12 h-12 rounded-full bg-surface/80 backdrop-blur-md border border-subtle flex flex-col items-center justify-center gap-1.5 hover:border-accent-blue/50 transition-colors duration-300 group shadow-xl"
+    aria-label="Menu"
+>
+    <span
+        class="w-5 h-0.5 bg-white group-hover:bg-accent-blue transition-all duration-300 origin-center"
+        id="line-1"></span>
+    <span
+        class="w-5 h-0.5 bg-white group-hover:bg-accent-blue transition-all duration-300 origin-center"
+        id="line-2"></span>
+</button>
+
+{
+    /* Menu Overlay Container (The Panel)
+    PC: 右側700pxのみを覆う
+    Mobile: 全画面
+*/
+}
+<div
+    id="menu-overlay"
+    class="fixed inset-0 lg:left-auto lg:right-0 lg:w-[700px] z-[90] bg-surface/95 backdrop-blur-xl border-l border-subtle opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center"
+>
+    {/* Decorative BG inside menu */}
+    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+            class="absolute top-[-20%] right-[-20%] w-[400px] h-[400px] bg-accent-blue/5 rounded-full blur-[100px]"
+        >
+        </div>
+        <div
+            class="absolute bottom-[-20%] left-[-20%] w-[400px] h-[400px] bg-accent-red/5 rounded-full blur-[100px]"
+        >
+        </div>
+    </div>
+
+    {/* Nav Links */}
+    <nav class="relative z-10 flex flex-col gap-10 text-center w-full px-12">
+        {
+            links.map((link) => (
+                <a href={link.href} class="menu-link block group">
+                    <span class="text-4xl md:text-5xl font-bold text-white tracking-tighter group-hover:text-accent-blue transition-colors font-en block">
+                        {link.label}
+                    </span>
+                    <span class="block w-0 h-px bg-accent-blue mx-auto mt-3 group-hover:w-12 transition-all duration-500 ease-out" />
+                </a>
+            ))
+        }
+    </nav>
+
+    {/* Footer Info */}
+    <div class="absolute bottom-12 left-0 w-full text-center">
+        <p
+            class="text-[10px] text-text-muted/30 font-mono font-en tracking-[0.3em]"
+        >
+            JUUTEION MENU
+        </p>
+    </div>
+</div>
+
+{
+    /* Transparent Backdrop for PC Left Side
+    ▼ 修正: 背景色(bg-black/20)を削除。透明なエリアとして配置。
+    これにより、左側の画像は明るいまま、クリックで閉じる機能だけ維持。
+*/
+}
+<div
+    id="menu-backdrop"
+    class="fixed inset-0 z-[80] opacity-0 pointer-events-none transition-opacity duration-300 hidden lg:block cursor-default"
+>
+</div>
+
+<script>
+    const btn = document.getElementById("menu-toggle");
+    const overlay = document.getElementById("menu-overlay");
+    const backdrop = document.getElementById("menu-backdrop");
+    const line1 = document.getElementById("line-1");
+    const line2 = document.getElementById("line-2");
+    const links = document.querySelectorAll(".menu-link");
+
+    let isOpen = false;
+
+    function toggleMenu() {
+        isOpen = !isOpen;
+
+        if (isOpen) {
+            // Open
+            overlay?.classList.remove("opacity-0", "pointer-events-none");
+            // Backdropも有効化（透明だがクリック判定はある）
+            backdrop?.classList.remove("opacity-0", "pointer-events-none");
+
+            line1?.classList.add("rotate-45", "translate-y-[4px]");
+            line2?.classList.add("-rotate-45", "-translate-y-[4px]");
+
+            document.body.style.overflow = "hidden";
+        } else {
+            // Close
+            overlay?.classList.add("opacity-0", "pointer-events-none");
+            backdrop?.classList.add("opacity-0", "pointer-events-none");
+
+            line1?.classList.remove("rotate-45", "translate-y-[4px]");
+            line2?.classList.remove("-rotate-45", "-translate-y-[4px]");
+
+            document.body.style.overflow = "";
+        }
+    }
+
+    btn?.addEventListener("click", toggleMenu);
+
+    backdrop?.addEventListener("click", () => {
+        if (isOpen) toggleMenu();
+    });
+
+    links.forEach((link) => {
+        link.addEventListener("click", () => {
+            if (isOpen) toggleMenu();
+        });
+    });
+</script>

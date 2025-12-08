@@ -1,0 +1,25 @@
+---
+interface Props {
+    variant?: "default" | "blue" | "yellow" | "red";
+    class?: string;
+}
+
+const { variant = "default", class: className } = Astro.props;
+
+const styles = {
+    default: "border border-subtle bg-surface text-text-muted",
+    blue: "border border-accent-blue/30 bg-accent-blue/10 text-accent-blue",
+    yellow: "border border-accent-yellow/30 bg-accent-yellow/10 text-accent-yellow",
+    red: "bg-accent-red text-white border border-transparent",
+};
+---
+
+<span
+    class:list={[
+        "px-3 py-1 rounded-full text-xs font-bold tracking-wide inline-flex items-center justify-center",
+        styles[variant],
+        className,
+    ]}
+>
+    <slot />
+</span>

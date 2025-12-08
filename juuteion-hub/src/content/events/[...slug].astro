@@ -1,0 +1,242 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import Button from "../../components/ui/Button.astro";
+import Tag from "../../components/ui/Tag.astro";
+
+// 1. 全てのイベント記事を取得し、パス（URL）を生成する
+export async function getStaticPaths() {
+    const events = await getCollection("events");
+    return events.map((entry) => ({
+        params: { slug: entry.slug },
+        props: { entry },
+    }));
+}
+
+// 2. 記事データを取得
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+
+// ユーティリティ: 日付フォーマット
+const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    const day = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
+        date.getDay()
+    ];
+    return `${y}.${m}.${d} ${day}`;
+};
+---
+
+{/* 詳細ページは isFluid={false} (幅480px制限) で没入感を出す */}
+<Layout title={entry.data.title} isFluid={false}>
+    <article class="pb-32">
+        {/* Header Image */}
+        <div class="relative w-full aspect-video bg-zinc-800">
+            <div
+                class="absolute inset-0 bg-cover bg-center"
+                style={`background-image: url('${entry.data.image}')`}
+            >
+            </div>
+            <div
+                class="absolute inset-0 bg-gradient-to-t from-background to-transparent opacity-80"
+            >
+            </div>
+
+            {/* Back Button */}
+            <a
+                href="/"
+                class="absolute top-6 left-6 z-10 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path d="m15 18-6-6 6-6"></path></svg
+                >
+            </a>
+        </div>
+
+        {/* Title & Meta */}
+        <div class="px-6 -mt-8 relative z-10 space-y-6">
+            <div>
+                <Tag
+                    variant="yellow"
+                    class="mb-3 font-en shadow-lg shadow-accent-yellow/10"
+                    >EVENT INFO</Tag
+                >
+                <h1
+                    class="text-4xl font-bold text-white tracking-tighter leading-[1.1] mb-2 font-en"
+                >
+                    {entry.data.title}<br />
+                    <span class="text-accent-blue">{entry.data.subTitle}</span>
+                </h1>
+            </div>
+
+            {/* Info Grid */}
+            <div
+                class="bg-surface border border-subtle rounded-2xl p-5 space-y-4"
+            >
+                <div class="flex items-start gap-4">
+                    <div
+                        class="w-8 flex justify-center text-accent-blue mt-0.5"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><rect
+                                width="18"
+                                height="18"
+                                x="3"
+                                y="4"
+                                rx="2"
+                                ry="2"></rect><line
+                                x1="16"
+                                x2="16"
+                                y1="2"
+                                y2="6"></line><line x1="8" x2="8" y1="2" y2="6"
+                            ></line><line x1="3" x2="21" y1="10" y2="10"
+                            ></line></svg
+                        >
+                    </div>
+                    <div>
+                        <p
+                            class="text-xs text-text-muted font-bold tracking-widest font-en"
+                        >
+                            DATE
+                        </p>
+                        <p class="text-base font-bold text-white font-en">
+                            {formatDate(entry.data.date)}
+                        </p>
+                        <p class="text-sm text-text-muted font-en">
+                            {entry.data.time}
+                        </p>
+                    </div>
+                </div>
+                <div class="w-full h-px bg-subtle"></div>
+                <div class="flex items-start gap-4">
+                    <div class="w-8 flex justify-center text-accent-red mt-0.5">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path
+                                d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"
+                            ></path><circle cx="12" cy="10" r="3"></circle></svg
+                        >
+                    </div>
+                    <div>
+                        <p
+                            class="text-xs text-text-muted font-bold tracking-widest font-en"
+                        >
+                            PLACE
+                        </p>
+                        <p class="text-base font-bold text-white font-en">
+                            {entry.data.place}
+                        </p>
+                    </div>
+                </div>
+                <div class="w-full h-px bg-subtle"></div>
+                <div class="flex items-start gap-4">
+                    <div
+                        class="w-8 flex justify-center text-accent-yellow mt-0.5"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><rect width="20" height="12" x="2" y="6" rx="2"
+                            ></rect><circle cx="12" cy="12" r="2"></circle><path
+                                d="M6 12h.01"></path><path d="M18 12h.01"
+                            ></path></svg
+                        >
+                    </div>
+                    <div>
+                        <p
+                            class="text-xs text-text-muted font-bold tracking-widest font-en"
+                        >
+                            PRICE
+                        </p>
+                        <p class="text-base font-bold text-white font-en">
+                            {entry.data.price}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Markdown Content Body */}
+            <div
+                class="prose prose-invert prose-sm max-w-none pt-8 border-t border-subtle"
+            >
+                <Content />
+            </div>
+        </div>
+    </article>
+
+    {/* Sticky Footer CTA */}
+    <div
+        class="fixed bottom-0 left-0 right-0 z-50 p-6 bg-gradient-to-t from-background via-background to-transparent"
+    >
+        <div class="max-w-[480px] mx-auto">
+            <Button
+                variant="primary"
+                href="#"
+                class="shadow-2xl shadow-accent-blue/20"
+            >
+                チケットを予約する
+            </Button>
+        </div>
+    </div>
+</Layout>
+
+<style is:global>
+    /* Markdown Styling (Tailwind Typography Customization) */
+    .prose h2 {
+        @apply text-xl font-bold text-white mt-10 mb-4 font-sans flex items-center gap-3;
+    }
+    .prose h2::before {
+        content: "";
+        @apply block w-1.5 h-6 bg-accent-blue rounded-sm;
+    }
+    .prose h3 {
+        @apply text-lg font-bold text-white mt-8 mb-3 font-sans;
+    }
+    .prose p {
+        @apply text-text-muted leading-relaxed mb-6 font-sans;
+    }
+    .prose ul {
+        @apply list-disc list-inside text-text-muted mb-6 space-y-2 font-sans;
+    }
+    .prose strong {
+        @apply text-white font-bold;
+    }
+    .prose img {
+        @apply rounded-xl border border-subtle w-full;
+    }
+</style>

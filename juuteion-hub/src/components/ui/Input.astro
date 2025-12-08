@@ -1,0 +1,35 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"input"> {
+    label?: string;
+    multiline?: boolean;
+    rows?: number | string; // これを追加してエラーを解消
+}
+
+const { label, multiline = false, class: className, ...props } = Astro.props;
+
+const baseStyles =
+    "w-full bg-surface border border-subtle rounded-2xl px-5 py-4 text-base text-text-main placeholder:text-text-muted/30 focus:outline-none focus:border-accent-blue transition-colors";
+---
+
+<div class="space-y-2 w-full">
+    {
+        label && (
+            <label class="text-xs text-text-muted uppercase tracking-widest block">
+                {label}
+            </label>
+        )
+    }
+
+    {
+        multiline ? (
+            <textarea
+                class:list={[baseStyles, "resize-none", className]}
+                {...(props as any)}
+            />
+        ) : (
+            <input class:list={[baseStyles, className]} {...props} />
+        )
+    }
+</div>
