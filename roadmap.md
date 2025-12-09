@@ -76,19 +76,19 @@ This document outlines the step-by-step plan to transition from the current stat
 ## Phase 6: Admin Dashboard & Hybrid Architecture (Cost Optimized)
 **Goal:** Create a GUI Admin Panel while maintaining zero-cost read operations for the public site (SSG).
 
-- [ ] **6.1 Data Schema Expansion (Dual Images)**
+- [x] **6.1 Data Schema Expansion (Dual Images)**
   - Add `thumbnail` (Square) field to the schema alongside `mainVisual` (Portrait).
   - Update UI components (`HeroCard`) to use the square thumbnail.
 
-- [ ] **6.2 Firebase Backend Setup**
+- [x] **6.2 Firebase Backend Setup**
   - Initialize **Cloud Firestore** (Database).
   - Initialize **Firebase Storage** (Image hosting).
   - Set strict security rules (Read: Public, Write: Auth only).
 
 - [ ] **6.3 Admin Dashboard (SPA)**
-  - Create a client-side admin area (e.g., `/admin` or separate route).
-  - Implement **Firebase Authentication** (Google Sign-In) to restrict access to the owner.
-  - Build UI for Event CRUD (Create, Read, Update, Delete) connecting directly to Firestore.
+  - [x] Create a client-side admin area (e.g., `/admin` or separate route).
+  - [x] Implement **Firebase Authentication** (Google Sign-In) to restrict access to the owner.
+  - [ ] Build UI for Event CRUD (Create, Read, Update, Delete) connecting directly to Firestore. *(Current Blocker: Build Error in new.astro)*
 
 - [ ] **6.4 Advanced Image Uploader**
   - Implement **Client-Side Compression**:
