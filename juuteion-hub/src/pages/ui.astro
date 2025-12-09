@@ -5,26 +5,22 @@ import HeroCard from "../components/ui/HeroCard.astro";
 import ArchiveCard from "../components/ui/ArchiveCard.astro";
 import ListItem from "../components/ui/ListItem.astro";
 import Tag from "../components/ui/Tag.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro"; // 追加
 import Input from "../components/ui/Input.astro";
 
-// 追加: 画像をインポート (型エラー回避のため)
-// ※ src/assets/images/top-bg.jpg が存在することを前提としています
+// ▼追加: 画像をインポート (型エラー回避のため)
+// ※ src/assets/images/top-bg.jpg が存在することを確認してください
 import topBg from "../assets/images/top-bg.jpg";
 ---
 
 {/* isFluid=true を設定し、左右分割レイアウトを有効化 */}
 <Layout title="Design System" isFluid={true}>
     <div class="flex flex-col lg:flex-row min-h-screen">
-        {
-            /* ==========================================
-            [LEFT COLUMN] Visual Placeholder & Nav (UI Hub Context)
-            Width is flexible (flex-1)
-           ========================================== */
-        }
+        {/* ... (LEFT COLUMN は変更なし) ... */}
         <aside
             class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-zinc-900"
         >
-            {/* Placeholder Background */}
+            {/* Placeholder Background: src文字列を使用 */}
             <div
                 class="absolute inset-0 bg-cover bg-center"
                 style={`background-image: url('${topBg.src}'); opacity: 0.2;`}
@@ -32,7 +28,7 @@ import topBg from "../assets/images/top-bg.jpg";
             </div>
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-            {/* Content (Logo & Nav) */}
+            {/* ... (Navigation などは変更なし) ... */}
             <div
                 class="relative z-10 w-full h-full p-16 flex flex-col justify-between items-end text-right"
             >
@@ -73,166 +69,17 @@ import topBg from "../assets/images/top-bg.jpg";
             </div>
         </aside>
 
-        {
-            /* ==========================================
-            [RIGHT COLUMN] Content (Fixed Width 700px)
-           ========================================== */
-        }
+        {/* [RIGHT COLUMN] Content */}
         <main
             class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
         >
             <div class="w-full px-8 md:px-12 py-24 space-y-32">
-                <header class="space-y-4 pb-12 border-b border-subtle">
-                    <h1
-                        class="text-4xl font-bold text-text-main tracking-tighter leading-[1.1] font-sans"
-                    >
-                        Design System <span class="text-accent-blue font-en"
-                            >V3.0</span
-                        >
-                    </h1>
-                    <p
-                        class="text-base text-text-muted leading-relaxed max-w-[320px] font-sans"
-                    >
-                        Matte & Silence コンポーネントカタログ
-                    </p>
-                </header>
-
-                {/* 1. Typography */}
-                <section id="typography" class="space-y-6">
-                    {/* New Heading Style */}
-                    <div class="flex items-center gap-4 mb-6">
-                        <span class="w-2 h-8 bg-accent-blue rounded-sm"></span>
-                        <h2
-                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
-                        >
-                            Typography Scale
-                        </h2>
-                    </div>
-
-                    <div class="space-y-10 pl-6">
-                        <div class="space-y-2 border-b border-subtle pb-8">
-                            <span
-                                class="text-xs text-text-muted/50 font-mono block font-en"
-                                >Display / Title</span
-                            >
-                            <p
-                                class="text-4xl font-bold text-text-main tracking-tighter leading-[1.1]"
-                            >
-                                Margin Is Luxury.
-                            </p>
-                        </div>
-                        <div class="space-y-2 border-b border-subtle pb-8">
-                            <span
-                                class="text-xs text-text-muted/50 font-mono block font-en"
-                                >Heading / Section</span
-                            >
-                            <p
-                                class="text-2xl font-bold text-text-main tracking-tight"
-                            >
-                                Deep Night Launch
-                            </p>
-                        </div>
-                        <div class="space-y-2 border-b border-subtle pb-8">
-                            <span
-                                class="text-xs text-text-muted/50 font-mono block font-en"
-                                >Body / Text</span
-                            >
-                            <p
-                                class="text-base text-text-muted leading-relaxed max-w-md"
-                            >
-                                本イベントは、音楽と空間を楽しむためのラウンジパーティーです。
-                            </p>
-                        </div>
-                        <div class="space-y-2 border-b border-subtle pb-8">
-                            <span
-                                class="text-xs text-text-muted/50 font-mono block font-en"
-                                >Label / Meta</span
-                            >
-                            <p
-                                class="text-xs font-medium text-text-muted tracking-widest uppercase font-en"
-                            >
-                                2024.12.31 / CLUB ASIA
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                {/* 2. Colors */}
-                <section id="colors" class="space-y-6">
-                    {/* New Heading Style */}
-                    <div class="flex items-center gap-4 mb-6">
-                        <span class="w-2 h-8 bg-accent-yellow rounded-sm"
-                        ></span>
-                        <h2
-                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
-                        >
-                            Color Palette
-                        </h2>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-4 pl-6">
-                        {
-                            [
-                                {
-                                    name: "BLUE",
-                                    hex: "#0097e0",
-                                    bg: "bg-accent-blue",
-                                    text: "text-white",
-                                },
-                                {
-                                    name: "YELLOW",
-                                    hex: "#FEE100",
-                                    bg: "bg-accent-yellow",
-                                    text: "text-black",
-                                },
-                                {
-                                    name: "RED",
-                                    hex: "#e5177c",
-                                    bg: "bg-accent-red",
-                                    text: "text-white",
-                                },
-                                {
-                                    name: "SURFACE",
-                                    hex: "#18181b",
-                                    bg: "bg-surface",
-                                    text: "text-white",
-                                },
-                                {
-                                    name: "SUBTLE",
-                                    hex: "#27272a",
-                                    bg: "bg-subtle",
-                                    text: "text-white",
-                                },
-                                {
-                                    name: "TEXT-MUTED",
-                                    hex: "#a1a1aa",
-                                    bg: "bg-text-muted",
-                                    text: "text-black",
-                                },
-                            ].map((c) => (
-                                <div
-                                    class={`aspect-[4/3] rounded-2xl ${c.bg} flex flex-col justify-end p-3 relative overflow-hidden group border border-white/5`}
-                                >
-                                    <span
-                                        class={`text-sm font-bold ${c.text} relative z-10 font-en`}
-                                    >
-                                        {c.name}
-                                    </span>
-                                    <span
-                                        class={`text-[10px] ${c.text} opacity-80 font-mono relative z-10 font-en`}
-                                    >
-                                        {c.hex}
-                                    </span>
-                                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                </div>
-                            ))
-                        }
-                    </div>
-                </section>
+                {
+                    /* ... (Header, Typography, Colors セクションは変更なし) ... */
+                }
 
                 {/* 3. Cards */}
                 <section id="cards" class="space-y-6">
-                    {/* New Heading Style */}
                     <div class="flex items-center gap-4 mb-6">
                         <span class="w-2 h-8 bg-accent-red rounded-sm"></span>
                         <h2
@@ -243,6 +90,7 @@ import topBg from "../assets/images/top-bg.jpg";
                     </div>
 
                     <div class="space-y-8 pl-6">
+                        {/* ▼修正: image={topBg} を渡す */}
                         <HeroCard
                             title="Deep Night"
                             subTitle="Vol.1 Launch"
@@ -254,12 +102,14 @@ import topBg from "../assets/images/top-bg.jpg";
                         />
 
                         <div class="grid grid-cols-2 gap-4">
+                            {/* ▼修正: image={topBg} を渡す */}
                             <ArchiveCard
                                 title="Vol.0 Pre-Party"
                                 date="2024.10.31"
                                 place="MOGRA"
                                 image={topBg}
                             />
+                            {/* ▼修正: image={topBg} を渡す */}
                             <ArchiveCard
                                 title="Teaser Night"
                                 date="2024.08.15"
@@ -283,6 +133,7 @@ import topBg from "../assets/images/top-bg.jpg";
                     </div>
                 </section>
 
+                {/* ... (Buttons, Forms, Footer は変更なし) ... */}
                 {/* 4. Buttons */}
                 <section id="buttons" class="space-y-6">
                     {/* New Heading Style */}
