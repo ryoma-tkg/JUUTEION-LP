@@ -135,8 +135,11 @@ const statusConfig = getStatusConfig(entry.data.status);
             <div
                 class="relative w-full aspect-[3/4] bg-zinc-900 group border-b border-subtle overflow-hidden"
             >
+                {
+                    /* 修正: hover時のscale拡大を削除 (transition-transform duration-700 group-hover:scale-105 を削除) */
+                }
                 <div
-                    class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                    class="absolute inset-0 bg-cover bg-center"
                     style={`background-image: url('${entry.data.image}')`}
                 >
                 </div>
@@ -403,12 +406,13 @@ const statusConfig = getStatusConfig(entry.data.status);
             {
                 (entry.data.status === "upcoming" ||
                     entry.data.status === "open") && (
-                    <div class="sticky bottom-0 left-0 right-0 z-50 p-6 bg-gradient-to-t from-black via-black/95 to-transparent border-t border-white/5 backdrop-blur-sm">
-                        <div class="w-full">
+                    /* 修正: border-t, backdrop-blur 削除。グラデーションのみで溶け込ませる */
+                    <div class="sticky bottom-0 left-0 right-0 z-50 p-6 pb-8 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
+                        <div class="w-full pointer-events-auto">
                             <Button
                                 variant="primary"
                                 href={`/events/${entry.slug}/ticket`}
-                                class="shadow-xl shadow-accent-blue/10 w-full"
+                                class="shadow-2xl shadow-black/50 w-full"
                             >
                                 チケットを予約する
                             </Button>
@@ -446,7 +450,7 @@ const statusConfig = getStatusConfig(entry.data.status);
     }
 
     .prose ul li {
-        @apply pl-8 py-4 relative flex items-start;
+        @apply pl-5 py-4 relative flex items-baseline;
     }
 
     /* Vertical Line */
@@ -457,22 +461,22 @@ const statusConfig = getStatusConfig(entry.data.status);
         height: 100%;
         z-index: 0;
     }
-    /* 線の始点: ドットの中心 (top: 1.35rem) から */
+    /* 線の始点: ドットの中心 (top-6 = 1.5rem) から */
     .prose ul li:first-child::after {
-        top: 1.35rem;
-        height: calc(100% - 1.35rem);
+        @apply top-6;
+        height: calc(100% - 1.5rem);
     }
     /* 線の終点: ドットの中心まで */
     .prose ul li:last-child::after {
         top: 0;
-        height: 1.35rem;
+        @apply h-6;
     }
 
     /* The Dot (Centered relative to text height) */
     .prose ul li::before {
         content: "";
-        /* py-4 (1rem) + text line-height adjustment -> approx 1.35rem center */
-        @apply absolute left-0 top-[1.35rem] w-2 h-2 rounded-full bg-subtle ring-4 ring-zinc-950 transition-colors duration-300 z-10;
+        /* py-4 (1rem = 16px) + 行の半分の高さ (approx 8px) -> 24px (1.5rem/top-6) */
+        @apply absolute left-0 top-6 w-2 h-2 rounded-full bg-subtle ring-4 ring-zinc-950 transition-colors duration-300 z-10;
     }
     .prose ul li:hover::before {
         @apply bg-accent-blue;
@@ -480,7 +484,7 @@ const statusConfig = getStatusConfig(entry.data.status);
 
     .prose ul li strong {
         /* 時間部分のデザイン */
-        @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right mt-1;
+        @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right;
     }
 
     /* === ENTRANCE FEE Table (Restored Graphical Style) === */
