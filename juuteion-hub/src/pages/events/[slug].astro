@@ -369,7 +369,6 @@ const statusConfig = getStatusConfig(entry.data.status);
                                         referrerpolicy="no-referrer-when-downgrade"
                                         class="w-full h-full opacity-70 group-hover:opacity-100 transition-opacity duration-500"
                                     />
-                                    {/* Overlay to prevent accidental scroll interaction initially, optional */}
                                     <div class="absolute inset-0 pointer-events-none border border-white/5 rounded-2xl" />
                                 </div>
 
@@ -447,8 +446,7 @@ const statusConfig = getStatusConfig(entry.data.status);
     }
 
     .prose ul li {
-        /* items-baseline で文字の底辺を揃える */
-        @apply pl-8 py-4 relative flex items-baseline;
+        @apply pl-8 py-4 relative flex items-start;
     }
 
     /* Vertical Line */
@@ -459,20 +457,22 @@ const statusConfig = getStatusConfig(entry.data.status);
         height: 100%;
         z-index: 0;
     }
+    /* 線の始点: ドットの中心 (top: 1.35rem) から */
     .prose ul li:first-child::after {
-        top: 1.2rem; /* Start from Dot center */
-        height: calc(100% - 1.2rem);
+        top: 1.35rem;
+        height: calc(100% - 1.35rem);
     }
+    /* 線の終点: ドットの中心まで */
     .prose ul li:last-child::after {
         top: 0;
-        height: 1.2rem; /* End at Dot center */
+        height: 1.35rem;
     }
 
     /* The Dot (Centered relative to text height) */
     .prose ul li::before {
         content: "";
-        /* top-[1.2rem] はフォントサイズや行間によるが、大体文字の中心に来る位置 */
-        @apply absolute left-0 top-[1rem] w-2 h-2 rounded-full bg-subtle ring-4 ring-zinc-950 transition-colors duration-300 z-10;
+        /* py-4 (1rem) + text line-height adjustment -> approx 1.35rem center */
+        @apply absolute left-0 top-[1.35rem] w-2 h-2 rounded-full bg-subtle ring-4 ring-zinc-950 transition-colors duration-300 z-10;
     }
     .prose ul li:hover::before {
         @apply bg-accent-blue;
@@ -480,7 +480,28 @@ const statusConfig = getStatusConfig(entry.data.status);
 
     .prose ul li strong {
         /* 時間部分のデザイン */
-        @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right;
+        @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right mt-1;
+    }
+
+    /* === ENTRANCE FEE Table (Restored Graphical Style) === */
+    .prose table {
+        @apply w-full border-separate border-spacing-0 my-8 rounded-xl border border-zinc-700 overflow-hidden bg-surface;
+    }
+    .prose thead tr {
+        @apply bg-zinc-800/50;
+    }
+    .prose th {
+        @apply p-4 text-left font-bold border-b border-zinc-700 text-xs text-zinc-400 font-en tracking-widest uppercase;
+    }
+    .prose td {
+        @apply p-4 border-b border-zinc-700/50 text-zinc-300 text-sm font-en;
+    }
+    .prose tr:last-child td {
+        @apply border-b-0;
+    }
+    .prose td:not(:first-child),
+    .prose th:not(:first-child) {
+        @apply text-right;
     }
 
     /* === Guidelines / Attention (Blockquote) === */
@@ -490,7 +511,6 @@ const statusConfig = getStatusConfig(entry.data.status);
     .prose blockquote p {
         @apply text-zinc-300 mb-2 last:mb-0 font-bold;
     }
-    /* Blockquote内のリスト（注意事項リストなど） */
     .prose blockquote ul {
         @apply border-none m-0 p-0 space-y-2;
     }
@@ -501,7 +521,7 @@ const statusConfig = getStatusConfig(entry.data.status);
         @apply top-[0.6rem] w-1.5 h-1.5 bg-accent-red ring-0;
     }
     .prose blockquote ul li::after {
-        content: none; /* 線を消す */
+        content: none;
     }
     .prose blockquote strong {
         @apply text-accent-red w-auto mr-1;
