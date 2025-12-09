@@ -211,15 +211,6 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                     class="absolute bottom-0 left-0 w-full p-8 md:p-12 flex flex-col justify-end z-20"
                 >
                     <div class="space-y-4">
-                        <div class="mb-2">
-                            <Tag
-                                variant={status.color as any}
-                                class="shadow-lg font-en tracking-widest border border-white/10"
-                            >
-                                {status.label}
-                            </Tag>
-                        </div>
-
                         <h1
                             class="flex flex-col md:flex-row md:items-baseline flex-wrap gap-x-4 gap-y-1 font-bold tracking-tighter leading-none font-en"
                         >
@@ -239,15 +230,13 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                             class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-bold text-white tracking-widest font-en pt-2"
                         >
                             <div class="flex items-center gap-2">
-                                <span
-                                    class="w-1.5 h-1.5 rounded-full bg-accent-red"
-                                ></span>
-                                <span>{formatDate(event.date)}</span>
+                                <Tag
+                                    variant={status.color as any}
+                                    class="font-en"
+                                >
+                                    {status.label}
+                                </Tag>
                             </div>
-                            <span class="w-px h-3 bg-white/50"></span>
-                            <span>{event.time}</span>
-                            <span class="w-px h-3 bg-white/50"></span>
-                            <span>@{event.place}</span>
                         </div>
                     </div>
                 </div>
