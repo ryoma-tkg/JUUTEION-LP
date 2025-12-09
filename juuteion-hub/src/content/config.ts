@@ -11,8 +11,14 @@ const eventCollection = defineCollection({
         time: z.string(),
         place: z.string(),
         price: z.string(),
-        // image() ヘルパーを使用 (文字列ではなく画像オブジェクトになる)
-        image: image(),
+
+        // --- 画像設定の変更 ---
+        // 詳細ページ用 (A版縦長)
+        mainVisual: image(),
+        // TOP/一覧用 (正方形)
+        thumbnail: image(),
+        // --------------------
+
         status: z.enum(['upcoming', 'archive', 'soldout']).default('archive'),
         address: z.string().optional(),
         mapEmbed: z.string().optional(),

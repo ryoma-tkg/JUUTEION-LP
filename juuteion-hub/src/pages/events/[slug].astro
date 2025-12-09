@@ -4,9 +4,7 @@ import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
-// 画像最適化用
 import { Image } from "astro:assets";
-// ロゴをインポート
 import logo from "../../assets/logo/jto_logo.svg";
 
 // 1. 全てのイベント記事を取得
@@ -25,7 +23,7 @@ interface Props {
 const { entry } = Astro.props;
 const { Content } = await entry.render();
 
-// ユーティリティ: 日付フォーマット
+// ユーティリティ
 const formatDate = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -36,7 +34,7 @@ const formatDate = (date: Date) => {
     return `${y}.${m}.${d} ${day}`;
 };
 
-// ステータス判定ロジック
+// ステータス判定
 const getEventStatus = (entry: CollectionEntry<"events">) => {
     if (entry.data.status === "soldout") {
         return { label: "SOLD OUT", color: "red", isActive: false };
@@ -59,10 +57,8 @@ const status = getEventStatus(entry);
 ---
 
 <Layout title={entry.data.title} isFluid={true}>
-    {/* Navigation Removed */}
-
     <div class="flex flex-col lg:flex-row min-h-screen">
-        {/* [LEFT COLUMN] Visual Only (PC) - Logo Center */}
+        {/* [LEFT COLUMN] Visual Only (PC) */}
         <aside
             class="hidden lg:flex flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-background items-center justify-center z-0"
         >
@@ -92,11 +88,10 @@ const status = getEventStatus(entry);
         <main
             class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
         >
-            {/* Mobile Header: Sticky with Logo */}
+            {/* Mobile Header */}
             <header
                 class="lg:hidden flex justify-between items-center p-4 px-6 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50 h-16"
             >
-                {/* Left: Back Button */}
                 <a
                     href="/"
                     class="flex items-center gap-2 text-text-muted hover:text-white transition-colors relative z-10"
@@ -116,7 +111,6 @@ const status = getEventStatus(entry);
                     <span class="font-bold text-sm font-en">BACK</span>
                 </a>
 
-                {/* Center: Logo (Absolute Position) */}
                 <div
                     class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                 >
@@ -128,30 +122,27 @@ const status = getEventStatus(entry);
                 </div>
             </header>
 
-            {/* 1. Hero Section (Image Full View) */}
+            {/* 1. Hero Section */}
             <div
                 class="relative w-full bg-zinc-900 group border-b border-subtle overflow-hidden"
             >
-                {/* <Image /> コンポーネントを使用し最適化 */}
+                {/* 変更: mainVisual を使用 */}
                 <Image
-                    src={entry.data.image}
+                    src={entry.data.mainVisual}
                     alt={entry.data.title}
                     class="w-full h-auto block"
                     loading="eager"
                 />
 
-                {/* Black Fade Gradient */}
                 <div
                     class="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-background via-background/80 to-transparent"
                 >
                 </div>
 
-                {/* Title & Details Overlay */}
                 <div
                     class="absolute bottom-0 left-0 w-full p-8 md:p-12 flex flex-col justify-end z-20"
                 >
                     <div class="space-y-4">
-                        {/* Status Tag */}
                         <div class="mb-2">
                             <Tag
                                 variant={status.color as any}
@@ -161,7 +152,6 @@ const status = getEventStatus(entry);
                             </Tag>
                         </div>
 
-                        {/* Title Block (Inline) */}
                         <h1
                             class="flex flex-col md:flex-row md:items-baseline flex-wrap gap-x-4 gap-y-1 font-bold tracking-tighter leading-none font-en"
                         >
@@ -177,7 +167,6 @@ const status = getEventStatus(entry);
                             </span>
                         </h1>
 
-                        {/* Meta Info */}
                         <div
                             class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-bold text-white tracking-widest font-en pt-2"
                         >
@@ -196,16 +185,15 @@ const status = getEventStatus(entry);
                 </div>
             </div>
 
-            {/* Inner Content Wrapper */}
+            {/* Inner Content */}
             <div class="w-full px-8 md:px-12 py-12 lg:py-24 pb-32 space-y-24">
-                {/* 2. Info Grid */}
                 <section>
                     <SectionHeader
                         title="Event Info"
                         accentColor="yellow"
                         class="mb-6"
                     />
-
+                    {/* ... (Info Grid は変更なし) ... */}
                     <div
                         class="bg-surface border border-subtle rounded-2xl p-6 space-y-4 shadow-lg"
                     >
@@ -334,14 +322,12 @@ const status = getEventStatus(entry);
                     </div>
                 </section>
 
-                {/* 3. Markdown Content Body (TIMETABLE, etc) */}
                 <div
                     class="prose prose-invert prose-sm md:prose-base max-w-none"
                 >
                     <Content />
                 </div>
 
-                {/* 4. ACCESS (Google Map) */}
                 {
                     entry.data.mapEmbed && (
                         <section id="access">
@@ -350,9 +336,7 @@ const status = getEventStatus(entry);
                                 accentColor="subtle"
                                 class="mb-6"
                             />
-
                             <div class="space-y-4">
-                                {/* Map Container (Grayscale Filter) */}
                                 <div class="w-full aspect-video rounded-2xl overflow-hidden border border-subtle bg-surface shadow-lg relative group">
                                     <iframe
                                         src={entry.data.mapEmbed}
@@ -366,8 +350,6 @@ const status = getEventStatus(entry);
                                     />
                                     <div class="absolute inset-0 pointer-events-none border border-white/5 rounded-2xl" />
                                 </div>
-
-                                {/* Address Text */}
                                 <div class="flex items-start justify-between gap-4 px-2">
                                     <div>
                                         <p class="text-lg font-bold text-white font-en">
@@ -394,7 +376,6 @@ const status = getEventStatus(entry);
                 }
             </div>
 
-            {/* Sticky Footer CTA: Check 'isActive' status */}
             {
                 status.isActive && (
                     <div class="sticky bottom-0 left-0 right-0 z-50 p-6 pb-8 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
@@ -415,9 +396,7 @@ const status = getEventStatus(entry);
 </Layout>
 
 <style is:global>
-    /* === Markdown Custom Styling === */
-
-    /* Headers */
+    /* ... (Styleは変更なし) ... */
     .prose h2 {
         @apply text-xl font-bold text-white mt-20 mb-8 font-en uppercase tracking-widest flex items-center gap-4;
     }
@@ -425,26 +404,19 @@ const status = getEventStatus(entry);
         content: "";
         @apply block w-2 h-8 bg-text-muted rounded-sm;
     }
-
     .prose h3 {
         @apply text-lg font-bold text-zinc-200 mt-12 mb-4 font-sans border-b border-subtle pb-2 inline-block pr-8;
     }
     .prose p {
         @apply text-zinc-400 leading-relaxed mb-6 font-sans text-base;
     }
-
-    /* === Timetable Style (Fixed Alignment) === */
     .prose ul {
         @apply list-none pl-0 space-y-0 my-8 ml-2 relative;
         border-left: none;
     }
-
     .prose ul li {
-        /* pl-5 (20px) -> pl-4 (16px) に変更して距離を詰める */
         @apply pl-4 py-4 relative flex items-baseline;
     }
-
-    /* Vertical Line */
     .prose ul li::after {
         content: "";
         @apply absolute left-[3px] w-[1px] bg-subtle;
@@ -452,33 +424,24 @@ const status = getEventStatus(entry);
         height: 100%;
         z-index: 0;
     }
-    /* 線の始点: ドットの中心 (top-6 = 1.5rem) から */
     .prose ul li:first-child::after {
         @apply top-6;
         height: calc(100% - 1.5rem);
     }
-    /* 線の終点: ドットの中心まで */
     .prose ul li:last-child::after {
         top: 0;
         @apply h-6;
     }
-
-    /* The Dot (Centered relative to text height) */
     .prose ul li::before {
         content: "";
-        /* py-4 (1rem = 16px) + 行の半分の高さ (approx 8px) -> 24px (1.5rem/top-6) */
         @apply absolute left-0 top-6 w-2 h-2 rounded-full bg-subtle ring-4 ring-zinc-950 transition-colors duration-300 z-10;
     }
     .prose ul li:hover::before {
         @apply bg-accent-blue;
     }
-
     .prose ul li strong {
-        /* 時間部分のデザイン */
         @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right;
     }
-
-    /* === ENTRANCE FEE Table (Restored Graphical Style) === */
     .prose table {
         @apply w-full border-separate border-spacing-0 my-8 rounded-xl border border-zinc-700 overflow-hidden bg-surface;
     }
@@ -498,8 +461,6 @@ const status = getEventStatus(entry);
     .prose th:not(:first-child) {
         @apply text-right;
     }
-
-    /* === Guidelines / Attention (Blockquote) === */
     .prose blockquote {
         @apply border-l-4 border-accent-red bg-accent-red/5 p-6 my-8 rounded-r-xl not-italic;
     }
@@ -521,8 +482,6 @@ const status = getEventStatus(entry);
     .prose blockquote strong {
         @apply text-accent-red w-auto mr-1;
     }
-
-    /* Images */
     .prose img {
         @apply rounded-sm border border-subtle w-full shadow-lg opacity-90;
     }

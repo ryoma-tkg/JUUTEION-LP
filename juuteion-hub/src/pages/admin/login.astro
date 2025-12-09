@@ -1,0 +1,49 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Login">
+    <div class="flex h-full w-full items-center justify-center">
+        <div
+            class="w-full max-w-sm space-y-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 text-center shadow-2xl backdrop-blur-md"
+        >
+            <div>
+                <h2 class="mb-2 text-3xl font-bold tracking-tight font-en">
+                    Welcome Back
+                </h2>
+                <p class="text-sm text-zinc-500">管理者専用ログイン</p>
+            </div>
+
+            <button
+                id="google-login-btn"
+                class="flex w-full items-center justify-center gap-3 rounded-xl bg-white py-3.5 px-4 font-bold text-black transition-colors hover:bg-zinc-200"
+            >
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path
+                        fill="currentColor"
+                        d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z"
+                    ></path>
+                </svg>
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <script>
+        import { auth } from "../../lib/firebase/client";
+        import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+
+        const btn = document.getElementById("google-login-btn");
+
+        btn?.addEventListener("click", async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                // 成功時は AdminLayout の onAuthStateChanged が検知してリダイレクトする
+            } catch (error) {
+                console.error(error);
+                alert("ログインに失敗しました。");
+            }
+        });
+    </script>
+</AdminLayout>
