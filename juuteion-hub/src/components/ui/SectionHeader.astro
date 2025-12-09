@@ -1,7 +1,8 @@
 ---
 interface Props {
     title: string;
-    accentColor?: "blue" | "yellow" | "red" | "subtle";
+    titleClass?: string;
+    accentColor?: "blue" | "yellow" | "red" | "subtle" | "muted";
     link?: {
         href: string;
         label: string;
@@ -16,6 +17,7 @@ const colorMap = {
     yellow: "bg-accent-yellow",
     red: "bg-accent-red",
     subtle: "bg-subtle",
+    muted: "bg-text-muted",
 };
 ---
 

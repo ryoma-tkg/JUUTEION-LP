@@ -15,6 +15,7 @@ export default {
                 background: "#09090b",
                 surface: "#18181b",
                 subtle: "#27272a",
+                timeline: "#3e3e42",
                 "text-main": "#f4f4f5",
                 "text-muted": "#dadae6",
                 "accent-blue": "#0097e0",

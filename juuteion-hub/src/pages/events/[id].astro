@@ -258,7 +258,7 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                 <section>
                     <SectionHeader
                         title="Event Info"
-                        accentColor="yellow"
+                        accentColor="muted"
                         class="mb-6"
                     />
                     <div
@@ -401,7 +401,7 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                         <section id="access">
                             <SectionHeader
                                 title="Access"
-                                accentColor="subtle"
+                                accentColor="muted"
                                 class="mb-6"
                             />
                             <div class="space-y-4">
@@ -512,11 +512,11 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
         border-left: none;
     }
     .prose ul li {
-        @apply pl-4 py-4 relative flex items-baseline;
+        @apply pl-0 py-4 relative flex items-baseline font-bold;
     }
     .prose ul li::after {
         content: "";
-        @apply absolute left-[3px] w-[1px] bg-subtle;
+        @apply absolute left-[3px] w-[1px] bg-timeline;
         top: 0;
         height: 100%;
         z-index: 0;
@@ -531,7 +531,7 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
     }
     .prose ul li::before {
         content: "";
-        @apply absolute left-0 top-6 w-2 h-2 rounded-full bg-subtle ring-4 ring-zinc-950 transition-colors duration-300 z-10;
+        @apply absolute left-0 top-6 w-2 h-2 rounded-full bg-timeline ring-4 ring-zinc-950 transition-colors duration-300 z-10;
     }
     .prose ul li:hover::before {
         @apply bg-accent-blue;
