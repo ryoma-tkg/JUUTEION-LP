@@ -1,38 +1,31 @@
-name: Sync to AI Read Repo
+name: Sync to AI Branch
 
-# dev-test ブランチに push された時だけ動きます
+# dev-test ブランチへの Push で発動
 on:
   push:
     branches:
       - dev-test
 
+# GITHUB_TOKEN に書き込み権限を与える
+permissions:
+  contents: write
+
 jobs:
-  sync:
+  sync-branch:
     runs-on: ubuntu-latest
     steps:
-      # 1. 開発用リポジトリ（ソース）を取得
+      # 1. 現在のコード (dev-test) を取得
       - name: Checkout Source
         uses: actions/checkout@v4
         with:
-          path: source-repo
+          fetch-depth: 0 # 全履歴を取得（ブランチ切り替えのため）
 
-      # 2. AI用リポジトリ（ターゲット）を取得
-      # ここでトークンエラーが出ていたので、with: token: ... が正しく機能する必要があります
-      - name: Checkout Target
-        uses: actions/checkout@v4
-        with:
-          repository: ryoma-tkg/juuteion-lp-ai-read  # 【重要】コピー先リポジトリ名
-          token: ${{ secrets.API_TOKEN_GITHUB }}       # ステップ2で登録したSecret
-          path: target-repo
-          fetch-depth: 0 # 全履歴を取得（push時のエラー防止）
-
-      # 3. 必要なファイルだけを選別してコピー
-      - name: Sync Files
+      # 2. AIに読ませたいファイルだけを一時フォルダに退避
+      - name: Filter Files
         run: |
-          # コピー先の不要ファイルを削除（.git以外）
-          find target-repo -maxdepth 1 -not -name '.git' -not -name '.' -not -name '..' -exec rm -rf {} +
-
-          # rsyncで転送（設定ファイル、src、publicの一部のみ）
+          mkdir -p /tmp/ai-ready
+          
+          # rsyncで必要なファイルだけを /tmp/ai-ready にコピー
           rsync -av \
             --include='src/***' \
             --include='public/' \
@@ -46,23 +39,27 @@ jobs:
             --include='README.md' \
             --include='roadmap.md' \
             --exclude='*' \
-            ./source-repo/ ./target-repo/
+            ./ /tmp/ai-ready/
 
-      # 4. コミットしてPush
-      - name: Commit and Push
+      # 3. ai-chat ブランチに切り替えて、中身を入れ替える
+      - name: Deploy to ai-chat branch
         run: |
-          cd target-repo
-          git config user.name "AI Sync Bot"
-          git config user.email "bot@example.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 変更があるか確認
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "Sync from dev-test: ${{ github.event.head_commit.message }}"
-            
-            # ai-chatブランチへ強制的に送る（ブランチがなければ作る）
-            git checkout -B ai-chat
-            git push origin ai-chat
-          else
-            echo "No changes to sync."
-          fi
+          # ai-chat ブランチを作成（またはリセット）して切り替え
+          # --orphan を使うことで、過去の履歴と切り離した綺麗なブランチにします
+          git checkout --orphan ai-chat
+          
+          # 現在のブランチの中身を一旦全部消す（.git以外）
+          git rm -rf .
+
+          # 退避しておいた選別済みファイルを書き戻す
+          rsync -av /tmp/ai-ready/ ./
+
+          # コミット
+          git add .
+          git commit -m "AI用同期: ${{ github.event.head_commit.message }}"
+
+          # リモートの ai-chat ブランチへ強制上書き (Force Push)
+          git push origin ai-chat --force
