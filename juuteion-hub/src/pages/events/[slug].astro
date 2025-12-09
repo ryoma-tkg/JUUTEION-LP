@@ -4,6 +4,8 @@ import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
+// ロゴをインポート
+import logo from "../../assets/logo/jto_logo.svg";
 
 // 1. 全てのイベント記事を取得
 export async function getStaticPaths() {
@@ -32,14 +34,11 @@ const formatDate = (date: Date) => {
     return `${y}.${m}.${d} ${day}`;
 };
 
-// ステータス判定ロジック (日付ベース + SOLDOUT対応)
+// ステータス判定ロジック
 const getEventStatus = (entry: CollectionEntry<"events">) => {
-    // 1. 手動でSOLDOUTになっていればそれを優先
     if (entry.data.status === "soldout") {
         return { label: "SOLD OUT", color: "red", isActive: false };
     }
-
-    // 2. 日付判定
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(entry.data.date);
@@ -75,41 +74,15 @@ const status = getEventStatus(entry);
                 >
                 </div>
             </div>
-            <div
-                class="relative z-10 text-center space-y-4 select-none opacity-50"
-            >
-                <svg
-                    width="180"
-                    height="180"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="mx-auto text-white"
-                >
-                    <path
-                        d="M12 2L2 7L12 12L22 7L12 2Z"
-                        stroke="currentColor"
-                        stroke-width="0.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"></path>
-                    <path
-                        d="M2 17L12 22L22 17"
-                        stroke="currentColor"
-                        stroke-width="0.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"></path>
-                    <path
-                        d="M2 12L12 17L22 12"
-                        stroke="currentColor"
-                        stroke-width="0.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"></path>
-                </svg>
-                <h1
-                    class="text-2xl font-bold tracking-[0.5em] font-en text-white"
-                >
-                    JUUTEION
-                </h1>
+            {/* Logo Area */}
+            <div class="relative z-10 text-center select-none opacity-80">
+                <img
+                    src={logo.src}
+                    alt="JUUTEION"
+                    class="mx-auto w-48 h-auto"
+                    width="192"
+                    height="192"
+                />
             </div>
         </aside>
 
@@ -117,13 +90,14 @@ const status = getEventStatus(entry);
         <main
             class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
         >
-            {/* Mobile Header: Sticky Restored */}
+            {/* Mobile Header: Sticky with Logo */}
             <header
-                class="lg:hidden flex justify-between items-center p-6 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50"
+                class="lg:hidden flex justify-between items-center p-4 px-6 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50 h-16"
             >
+                {/* Left: Back Button */}
                 <a
                     href="/"
-                    class="flex items-center gap-2 text-text-muted hover:text-white transition-colors"
+                    class="flex items-center gap-2 text-text-muted hover:text-white transition-colors relative z-10"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -139,15 +113,23 @@ const status = getEventStatus(entry);
                     >
                     <span class="font-bold text-sm font-en">BACK</span>
                 </a>
+
+                {/* Center: Logo (Absolute Position) */}
+                <div
+                    class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                >
+                    <img
+                        src={logo.src}
+                        alt="JUUTEION"
+                        class="h-6 w-auto opacity-90"
+                    />
+                </div>
             </header>
 
             {/* 1. Hero Section (Image Full View) */}
             <div
                 class="relative w-full bg-zinc-900 group border-b border-subtle overflow-hidden"
             >
-                {
-                    /* 修正: imgタグを使用し、縦横比を維持して全体を表示 (h-auto) */
-                }
                 <img
                     src={entry.data.image}
                     alt={entry.data.title}
@@ -454,7 +436,8 @@ const status = getEventStatus(entry);
     }
 
     .prose ul li {
-        @apply pl-5 py-4 relative flex items-baseline;
+        /* pl-5 (20px) -> pl-4 (16px) に変更して距離を詰める */
+        @apply pl-1 py-4 relative flex items-baseline;
     }
 
     /* Vertical Line */

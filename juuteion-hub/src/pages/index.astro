@@ -5,6 +5,8 @@ import HeroCard from "../components/ui/HeroCard.astro";
 import ArchiveCard from "../components/ui/ArchiveCard.astro";
 import Tag from "../components/ui/Tag.astro";
 import SectionHeader from "../components/ui/SectionHeader.astro";
+// ロゴをインポート
+import logo from "../assets/logo/jto_logo.svg";
 
 import { getCollection, type CollectionEntry } from "astro:content";
 
@@ -112,13 +114,19 @@ const status = getEventStatus(nextEvent.rawDate);
 		<main
 			class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
 		>
-			{/* Mobile Header: sticky removed */}
+			{/* Mobile Header: Logo Centered & Sticky */}
 			<header
-				class="lg:hidden flex justify-between items-center p-6 border-b border-subtle bg-background z-30 relative"
+				class="lg:hidden flex justify-center items-center p-4 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50 h-16"
 			>
-				<h1 class="text-lg font-bold tracking-tighter font-sans">
-					獸酊音
-				</h1>
+				<div
+					class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+				>
+					<img
+						src={logo.src}
+						alt="JUUTEION"
+						class="h-8 w-auto opacity-100 mb-2"
+					/>
+				</div>
 			</header>
 
 			{/* 1. Hero Section */}
