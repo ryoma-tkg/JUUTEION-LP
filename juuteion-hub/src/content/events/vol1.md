@@ -4,6 +4,8 @@ subTitle: "#3"
 date: 2024-12-31
 time: "OPEN 23:00"
 place: "CLUB ASIA"
+address: "東京都渋谷区円山町1-8"
+mapEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3241.7479754683745!2d139.69287397623155!3d35.65858053121575!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60188ca821217e29%3A0x673c6a4a4085437!2sclubasia!5e0!3m2!1sja!2sjp!4v1700000000000!5m2!1sja!2sjp"
 price: "¥3,500 / 1D"
 image: "/images/top-bg.jpg"
 status: "upcoming"

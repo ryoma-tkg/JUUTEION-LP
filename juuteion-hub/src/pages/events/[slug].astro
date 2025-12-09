@@ -5,7 +5,7 @@ import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import HamburgerMenu from "../../components/ui/HamburgerMenu.astro";
 
-// 1. 全てのイベント記事を取得し、パス（URL）を生成する
+// 1. 全てのイベント記事を取得
 export async function getStaticPaths() {
     const events = await getCollection("events");
     return events.map((entry) => ({
@@ -28,21 +28,78 @@ const formatDate = (date) => {
     ];
     return `${y}.${m}.${d} ${day}`;
 };
+
+// ステータス設定
+const getStatusConfig = (status) => {
+    switch (status) {
+        case "upcoming":
+            return { label: "COMING SOON", color: "yellow" };
+        case "open":
+            return { label: "NOW OPEN", color: "red" };
+        case "soldout":
+            return { label: "SOLD OUT", color: "red" };
+        case "archive":
+        default:
+            return { label: "ARCHIVE", color: "default" };
+    }
+};
+
+const statusConfig = getStatusConfig(entry.data.status);
 ---
 
 <Layout title={entry.data.title} isFluid={true}>
     <HamburgerMenu />
 
     <div class="flex flex-col lg:flex-row min-h-screen">
-        {/* [LEFT COLUMN] Visual Only (PC) */}
+        {/* [LEFT COLUMN] Visual Only (PC) - Logo Center */}
         <aside
-            class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0"
+            class="hidden lg:flex flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-background items-center justify-center z-0"
         >
+            <div class="absolute inset-0 opacity-20 pointer-events-none">
+                <div
+                    class="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-blue/10 rounded-full blur-[100px]"
+                >
+                </div>
+                <div
+                    class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-red/10 rounded-full blur-[100px]"
+                >
+                </div>
+            </div>
             <div
-                class="absolute inset-0 bg-cover bg-center"
-                style={`background-image: url('${entry.data.image}')`}
+                class="relative z-10 text-center space-y-4 select-none opacity-50"
             >
-                <div class="absolute inset-0 bg-black/20"></div>
+                <svg
+                    width="180"
+                    height="180"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="mx-auto text-white"
+                >
+                    <path
+                        d="M12 2L2 7L12 12L22 7L12 2Z"
+                        stroke="currentColor"
+                        stroke-width="0.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    <path
+                        d="M2 17L12 22L22 17"
+                        stroke="currentColor"
+                        stroke-width="0.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    <path
+                        d="M2 12L12 17L22 12"
+                        stroke="currentColor"
+                        stroke-width="0.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                </svg>
+                <h1
+                    class="text-2xl font-bold tracking-[0.5em] font-en text-white"
+                >
+                    JUUTEION
+                </h1>
             </div>
         </aside>
 
@@ -50,7 +107,7 @@ const formatDate = (date) => {
         <main
             class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
         >
-            {/* Mobile Header (Back Button) */}
+            {/* Mobile Header */}
             <header
                 class="lg:hidden flex justify-between items-center p-6 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-30"
             >
@@ -74,43 +131,86 @@ const formatDate = (date) => {
                 </a>
             </header>
 
-            {/* Mobile Hero Image (Hidden on PC) */}
+            {/* 1. Hero Section (Poster Aspect Ratio) */}
             <div
-                class="lg:hidden relative w-full aspect-video bg-zinc-800 group overflow-hidden border-b border-subtle"
+                class="relative w-full aspect-[3/4] bg-zinc-900 group border-b border-subtle overflow-hidden"
             >
                 <div
-                    class="absolute inset-0 bg-cover bg-center"
+                    class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                     style={`background-image: url('${entry.data.image}')`}
                 >
                 </div>
+
+                {/* Black Fade Gradient (Shallow) */}
                 <div
-                    class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"
+                    class="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-background via-background/80 to-transparent"
                 >
+                </div>
+
+                {/* Title & Details Overlay */}
+                <div
+                    class="absolute bottom-0 left-0 w-full p-8 md:p-12 flex flex-col justify-end z-20"
+                >
+                    <div class="space-y-4">
+                        {/* Status Tag */}
+                        <div class="mb-2">
+                            <Tag
+                                variant={statusConfig.color as any}
+                                class="shadow-lg font-en tracking-widest border border-white/10"
+                            >
+                                {statusConfig.label}
+                            </Tag>
+                        </div>
+
+                        {/* Title Block (Inline) */}
+                        <h1
+                            class="flex flex-col md:flex-row md:items-end flex-wrap gap-x-4 gap-y-1 font-bold tracking-tighter leading-none font-en"
+                        >
+                            <span
+                                class="text-5xl lg:text-6xl text-white drop-shadow-2xl"
+                            >
+                                {entry.data.title}
+                            </span>
+                            <span
+                                class="text-2xl lg:text-3xl text-zinc-500 pb-1"
+                            >
+                                {entry.data.subTitle}
+                            </span>
+                        </h1>
+
+                        {/* Meta Info */}
+                        <div
+                            class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-bold text-white tracking-widest font-en pt-2"
+                        >
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="w-1.5 h-1.5 rounded-full bg-accent-red"
+                                ></span>
+                                <span>{formatDate(entry.data.date)}</span>
+                            </div>
+                            <span class="w-px h-3 bg-white/50"></span>
+                            <span>{entry.data.time}</span>
+                            <span class="w-px h-3 bg-white/50"></span>
+                            <span>@{entry.data.place}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* Inner Content Wrapper */}
-            <div class="w-full px-8 md:px-12 py-12 lg:py-24 pb-32 space-y-12">
-                {/* Title Section */}
-                <div class="space-y-6">
-                    <div>
-                        <Tag
-                            variant="yellow"
-                            class="mb-3 font-en shadow-lg shadow-accent-yellow/10"
-                            >EVENT INFO</Tag
+            <div class="w-full px-8 md:px-12 py-12 lg:py-24 pb-32 space-y-24">
+                {/* 2. Info Grid */}
+                <section>
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-accent-yellow rounded-sm"
+                        ></span>
+                        <h2
+                            class="text-xl font-bold font-en tracking-widest text-white uppercase"
                         >
-                        <h1
-                            class="text-4xl lg:text-5xl font-bold text-white tracking-tighter leading-[1.1] mb-2 font-en"
-                        >
-                            {entry.data.title}<br />
-                            <span
-                                class="text-accent-blue text-2xl lg:text-3xl block mt-2"
-                                >{entry.data.subTitle}</span
-                            >
-                        </h1>
+                            Event Info
+                        </h2>
                     </div>
 
-                    {/* Info Grid (Bento Style) */}
                     <div
                         class="bg-surface border border-subtle rounded-2xl p-6 space-y-4 shadow-lg"
                     >
@@ -152,7 +252,7 @@ const formatDate = (date) => {
                             </div>
                             <div>
                                 <p
-                                    class="text-xs text-text-muted font-bold tracking-widest font-en mb-1"
+                                    class="text-xs text-text-muted/50 font-bold tracking-widest font-en mb-1"
                                 >
                                     DATE
                                 </p>
@@ -164,8 +264,7 @@ const formatDate = (date) => {
                                 </p>
                             </div>
                         </div>
-                        <div class="w-full h-px bg-subtle"></div>
-
+                        <div class="w-full h-px bg-subtle/50"></div>
                         {/* PLACE */}
                         <div class="flex items-start gap-5">
                             <div
@@ -189,7 +288,7 @@ const formatDate = (date) => {
                             </div>
                             <div>
                                 <p
-                                    class="text-xs text-text-muted font-bold tracking-widest font-en mb-1"
+                                    class="text-xs text-text-muted/50 font-bold tracking-widest font-en mb-1"
                                 >
                                     PLACE
                                 </p>
@@ -198,8 +297,7 @@ const formatDate = (date) => {
                                 </p>
                             </div>
                         </div>
-                        <div class="w-full h-px bg-subtle"></div>
-
+                        <div class="w-full h-px bg-subtle/50"></div>
                         {/* PRICE */}
                         <div class="flex items-start gap-5">
                             <div
@@ -229,7 +327,7 @@ const formatDate = (date) => {
                             </div>
                             <div>
                                 <p
-                                    class="text-xs text-text-muted font-bold tracking-widest font-en mb-1"
+                                    class="text-xs text-text-muted/50 font-bold tracking-widest font-en mb-1"
                                 >
                                     PRICE
                                 </p>
@@ -239,30 +337,86 @@ const formatDate = (date) => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Markdown Content Body */}
+                {/* 3. Markdown Content Body (TIMETABLE, etc) */}
                 <div
-                    class="prose prose-invert prose-sm md:prose-base max-w-none pt-8 border-t border-subtle"
+                    class="prose prose-invert prose-sm md:prose-base max-w-none"
                 >
                     <Content />
                 </div>
+
+                {/* 4. ACCESS (Google Map) */}
+                {
+                    entry.data.mapEmbed && (
+                        <section id="access">
+                            <div class="flex items-center gap-4 mb-6">
+                                <span class="w-2 h-8 bg-text-muted rounded-sm" />
+                                <h2 class="text-xl font-bold font-en tracking-widest text-white uppercase">
+                                    Access
+                                </h2>
+                            </div>
+                            <div class="space-y-4">
+                                {/* Map Container (Grayscale Filter) */}
+                                <div class="w-full aspect-video rounded-2xl overflow-hidden border border-subtle bg-surface shadow-lg relative group">
+                                    <iframe
+                                        src={entry.data.mapEmbed}
+                                        width="100%"
+                                        height="100%"
+                                        style="border:0; filter: grayscale(100%) invert(92%) hue-rotate(180deg) contrast(90%);"
+                                        allowfullscreen=""
+                                        loading="lazy"
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                        class="w-full h-full opacity-70 group-hover:opacity-100 transition-opacity duration-500"
+                                    />
+                                    {/* Overlay to prevent accidental scroll interaction initially, optional */}
+                                    <div class="absolute inset-0 pointer-events-none border border-white/5 rounded-2xl" />
+                                </div>
+
+                                {/* Address Text */}
+                                <div class="flex items-start justify-between gap-4 px-2">
+                                    <div>
+                                        <p class="text-lg font-bold text-white font-en">
+                                            {entry.data.place}
+                                        </p>
+                                        {entry.data.address && (
+                                            <p class="text-sm text-text-muted mt-1 font-sans">
+                                                {entry.data.address}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entry.data.place + " " + (entry.data.address || ""))}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-xs font-bold font-en text-accent-blue hover:text-white transition-colors border-b border-accent-blue/30 pb-0.5"
+                                    >
+                                        OPEN MAP →
+                                    </a>
+                                </div>
+                            </div>
+                        </section>
+                    )
+                }
             </div>
 
-            {/* Sticky Footer CTA (Right Column Only) */}
-            <div
-                class="sticky bottom-0 left-0 right-0 z-50 p-6 bg-gradient-to-t from-black via-black/95 to-transparent border-t border-white/5 backdrop-blur-sm"
-            >
-                <div class="w-full">
-                    <Button
-                        variant="primary"
-                        href={`/events/${entry.slug}/ticket`}
-                        class="shadow-xl shadow-accent-blue/20 w-full"
-                    >
-                        チケットを予約する
-                    </Button>
-                </div>
-            </div>
+            {/* Sticky Footer CTA */}
+            {
+                (entry.data.status === "upcoming" ||
+                    entry.data.status === "open") && (
+                    <div class="sticky bottom-0 left-0 right-0 z-50 p-6 bg-gradient-to-t from-black via-black/95 to-transparent border-t border-white/5 backdrop-blur-sm">
+                        <div class="w-full">
+                            <Button
+                                variant="primary"
+                                href={`/events/${entry.slug}/ticket`}
+                                class="shadow-xl shadow-accent-blue/10 w-full"
+                            >
+                                チケットを予約する
+                            </Button>
+                        </div>
+                    </div>
+                )
+            }
         </main>
     </div>
 </Layout>
@@ -272,66 +426,89 @@ const formatDate = (date) => {
 
     /* Headers */
     .prose h2 {
-        @apply text-xl md:text-2xl font-bold text-white mt-12 mb-6 font-en flex items-center gap-3 border-l-4 border-accent-blue pl-4;
+        @apply text-xl font-bold text-white mt-20 mb-8 font-en uppercase tracking-widest flex items-center gap-4;
     }
-    /* Reset default before if exists in typography plugin */
     .prose h2::before {
-        content: none;
+        content: "";
+        @apply block w-2 h-8 bg-text-muted rounded-sm;
     }
 
     .prose h3 {
-        @apply text-lg md:text-xl font-bold text-zinc-200 mt-10 mb-4 font-sans border-b border-zinc-800 pb-2;
+        @apply text-lg font-bold text-zinc-200 mt-12 mb-4 font-sans border-b border-subtle pb-2 inline-block pr-8;
     }
     .prose p {
         @apply text-zinc-400 leading-relaxed mb-6 font-sans text-base;
     }
 
-    /* Timeline Style (Unordered List) */
+    /* === Timetable Style (Fixed Alignment) === */
     .prose ul {
-        @apply list-none pl-0 space-y-0 my-8 border-l-2 border-zinc-800 ml-2;
+        @apply list-none pl-0 space-y-0 my-8 ml-2 relative;
+        border-left: none;
     }
+
     .prose ul li {
-        @apply pl-6 py-4 relative border-b border-zinc-800/50 last:border-0;
+        /* items-baseline で文字の底辺を揃える */
+        @apply pl-8 py-4 relative flex items-baseline;
     }
+
+    /* Vertical Line */
+    .prose ul li::after {
+        content: "";
+        @apply absolute left-[3px] w-[1px] bg-subtle;
+        top: 0;
+        height: 100%;
+        z-index: 0;
+    }
+    .prose ul li:first-child::after {
+        top: 1.2rem; /* Start from Dot center */
+        height: calc(100% - 1.2rem);
+    }
+    .prose ul li:last-child::after {
+        top: 0;
+        height: 1.2rem; /* End at Dot center */
+    }
+
+    /* The Dot (Centered relative to text height) */
     .prose ul li::before {
         content: "";
-        @apply absolute left-[-5px] top-6 w-2.5 h-2.5 rounded-full bg-zinc-600 ring-4 ring-zinc-950 transition-colors duration-300;
+        /* top-[1.2rem] はフォントサイズや行間によるが、大体文字の中心に来る位置 */
+        @apply absolute left-0 top-[1rem] w-2 h-2 rounded-full bg-subtle ring-4 ring-zinc-950 transition-colors duration-300 z-10;
     }
     .prose ul li:hover::before {
         @apply bg-accent-blue;
     }
+
     .prose ul li strong {
-        @apply text-white font-en block text-lg leading-none mb-1;
+        /* 時間部分のデザイン */
+        @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right;
     }
 
-    /* Price Table Style */
-    .prose table {
-        @apply w-full border-separate border-spacing-0 my-8 rounded-xl border border-zinc-700 overflow-hidden bg-surface;
+    /* === Guidelines / Attention (Blockquote) === */
+    .prose blockquote {
+        @apply border-l-4 border-accent-red bg-accent-red/5 p-6 my-8 rounded-r-xl not-italic;
     }
-    .prose thead tr {
-        @apply bg-zinc-800/50;
+    .prose blockquote p {
+        @apply text-zinc-300 mb-2 last:mb-0 font-bold;
     }
-    .prose th {
-        @apply p-4 text-left font-bold border-b border-zinc-700 text-xs text-zinc-400 font-en tracking-widest uppercase;
+    /* Blockquote内のリスト（注意事項リストなど） */
+    .prose blockquote ul {
+        @apply border-none m-0 p-0 space-y-2;
     }
-    .prose td {
-        @apply p-4 border-b border-zinc-700/50 text-zinc-300 text-sm font-en;
+    .prose blockquote ul li {
+        @apply p-0 pl-5 border-none items-start;
     }
-    .prose tr:last-child td {
-        @apply border-b-0;
+    .prose blockquote ul li::before {
+        @apply top-[0.6rem] w-1.5 h-1.5 bg-accent-red ring-0;
     }
-    .prose td:not(:first-child),
-    .prose th:not(:first-child) {
-        @apply text-right;
+    .prose blockquote ul li::after {
+        content: none; /* 線を消す */
+    }
+    .prose blockquote strong {
+        @apply text-accent-red w-auto mr-1;
     }
 
     /* Images */
     .prose img {
-        @apply rounded-xl border border-zinc-800 w-full shadow-lg;
-    }
-
-    /* Blockquote */
-    .prose blockquote {
-        @apply border-l-4 border-accent-yellow bg-accent-yellow/5 p-4 rounded-r-lg not-italic text-zinc-300 my-6;
+        @apply rounded-sm border border-subtle w-full shadow-lg opacity-90;
     }
 </style>

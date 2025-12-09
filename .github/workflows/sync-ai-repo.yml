@@ -69,5 +69,5 @@ jobs:
 
           # コミット＆強制プッシュ
           git add .
-          git commit -m "AI用同期 (juuteion-hub + docs): ${{ github.event.head_commit.message }}"
+          git commit -m "A- (juuteion-hub + docs): ${{ github.event.head_commit.message }}"
           git push origin ai-chat --force
