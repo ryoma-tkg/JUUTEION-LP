@@ -9,3 +9,14 @@ image: "/images/top-bg.jpg"
 status: "upcoming"
 ---
 （ここにイベントの詳細本文が入ります。今は空でOKです）
+
+## TIMETABLE
+- **22:00** DOORS OPEN
+- **22:30** WARM UP DJ
+- **23:30** GUEST DJ
+  
+## ENTRANCE FEE
+| TICKET TYPE |  PRICE |
+| :---------- | -----: |
+| DOOR        | ¥3,000 |
+| ADV         | ¥2,500 |
