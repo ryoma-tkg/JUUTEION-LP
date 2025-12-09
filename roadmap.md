@@ -1,7 +1,4 @@
-{
-type: file_update
-fileName: ryoma-tkg/juuteion-lp/JUUTEION-LP-dev-test/roadmap.md
-content:
+
 # JUUTEION Development Roadmap
 
 This document outlines the step-by-step plan to transition from the current static prototype to a fully dynamic, CMS-driven event hub.
@@ -56,20 +53,54 @@ This document outlines the step-by-step plan to transition from the current stat
 ## Phase 4: Asset Optimization & Polish
 **Goal:** Switch from static `public/` images to optimized `src/assets/` images.
 
-- [ ] **4.1 Image Migration**
+- [x] **4.1 Image Migration**
   - Move high-quality original images to `src/assets/images/`.
-- [ ] **4.2 Schema Update**
+- [x] **4.2 Schema Update**
   - Update `src/content/config.ts` to use the `image()` helper for validation and optimization.
-- [ ] **4.3 Component Update**
+- [x] **4.3 Component Update**
   - Refactor `HeroCard.astro` and `ArchiveCard.astro` to use Astro's `<Image />` component or `getImage()` for background images.
-- [ ] **4.4 Final Design Check**
+- [x] **4.4 Final Design Check**
   - Verify responsive behavior on Mobile and PC.
   - Ensure typography rules (Montserrat mixed with IBM Plex Sans JP) are applied correctly.
 
 ## Phase 5: Launch Preparation
-- [ ] **5.1 Build Check**
+**Goal:** Ensure the site builds correctly and deploy it to a live environment with CI/CD.
+
+- [x] **5.1 Build Check**
   - Run `npm run build` to ensure no errors during static generation.
-- [ ] **5.2 Deployment**
-  - Deploy to production environment (Vercel / Netlify / Cloudflare Pages).
-  - アハン
-}
+- [x] **5.2 Deployment & CI/CD**
+  - Initialize Firebase Hosting.
+  - Configure GitHub Actions for automated deployment.
+  - Setup `dev-test` channel for preview deployments on push.
+
+## Phase 6: Admin Dashboard & Hybrid Architecture (Cost Optimized)
+**Goal:** Create a GUI Admin Panel while maintaining zero-cost read operations for the public site (SSG).
+
+- [ ] **6.1 Data Schema Expansion (Dual Images)**
+  - Add `thumbnail` (Square) field to the schema alongside `mainVisual` (Portrait).
+  - Update UI components (`HeroCard`) to use the square thumbnail.
+
+- [ ] **6.2 Firebase Backend Setup**
+  - Initialize **Cloud Firestore** (Database).
+  - Initialize **Firebase Storage** (Image hosting).
+  - Set strict security rules (Read: Public, Write: Auth only).
+
+- [ ] **6.3 Admin Dashboard (SPA)**
+  - Create a client-side admin area (e.g., `/admin` or separate route).
+  - Implement **Firebase Authentication** (Google Sign-In) to restrict access to the owner.
+  - Build UI for Event CRUD (Create, Read, Update, Delete) connecting directly to Firestore.
+
+- [ ] **6.4 Advanced Image Uploader**
+  - Implement **Client-Side Compression**:
+    - Resize and convert images to WebP *in the browser* before uploading.
+    - Limit file size to save Storage costs and bandwidth.
+  - Upload to Firebase Storage and retrieve download URLs.
+
+- [ ] **6.5 Build-Time Data Fetching**
+  - Modify `src/content/config.ts` (or create a data loader) to fetch events from **Firestore** instead of Markdown files during `npm run build`.
+  - Ensure the site remains SSG (Static Site Generation).
+
+- [ ] **6.6 Automated Deployment Pipeline**
+  - Create a "Publish" button in the Admin Dashboard.
+  - Trigger a **GitHub Actions Repository Dispatch** event upon publishing.
+  - This action will re-build and re-deploy the static site with the latest data from Firestore.
