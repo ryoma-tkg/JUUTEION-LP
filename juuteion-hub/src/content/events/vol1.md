@@ -1,7 +1,7 @@
 ---
 title: "獸酊音"
 subTitle: "#3"
-date: 2024-12-31
+date: 2023-12-31
 time: "OPEN 23:00"
 place: "CLUB ASIA"
 address: "東京都渋谷区円山町1-8"

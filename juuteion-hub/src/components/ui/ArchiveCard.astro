@@ -12,9 +12,13 @@ const { title, subTitle, date, place, image, href } = Astro.props;
 const Tag = href ? "a" : "div";
 ---
 
-<Tag href={href} class="group cursor-pointer space-y-3 block">
+<Tag
+    href={href}
+    class="group cursor-pointer flex sm:block items-center sm:items-stretch gap-4 sm:gap-0 sm:space-y-3"
+>
+    {/* Image Area: Mobile=Fixed Width / PC=Full Width */}
     <div
-        class="relative aspect-[4/3] rounded-2xl overflow-hidden bg-surface border border-subtle"
+        class="relative w-28 sm:w-full aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden bg-surface border border-subtle shrink-0"
     >
         <div
             class="absolute inset-0 bg-cover bg-center grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
@@ -26,24 +30,28 @@ const Tag = href ? "a" : "div";
         >
         </div>
     </div>
-    <div class="space-y-1 pl-1">
-        {/* font-en で混植対応 / Title & SubTitle Same Line */}
+
+    {/* Content Area */}
+    <div class="space-y-1 sm:pl-1 min-w-0">
+        {/* Title & SubTitle */}
         <h4
-            class="text-base font-bold text-text-main group-hover:text-text-main transition-colors font-en flex flex-wrap items-baseline gap-x-2"
+            class="text-base font-bold text-text-main group-hover:text-text-main transition-colors font-en flex flex-col sm:flex-row sm:flex-wrap sm:items-baseline gap-x-2 leading-tight"
         >
-            <span>{title}</span>
+            <span class="truncate">{title}</span>
             {
                 subTitle && (
-                    <span class="text-sm text-zinc-500 font-normal">
+                    <span class="text-xs sm:text-sm text-zinc-500 font-normal truncate">
                         {subTitle}
                     </span>
                 )
             }
         </h4>
+
+        {/* Meta Info */}
         <p class="text-xs text-text-muted flex items-center gap-2 font-en">
             <span>{date}</span>
             <span class="w-px h-2 bg-subtle"></span>
-            <span>{place}</span>
+            <span class="truncate">{place}</span>
         </p>
     </div>
 </Tag>

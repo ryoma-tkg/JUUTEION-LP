@@ -1,9 +1,8 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
-import HamburgerMenu from "../../components/ui/HamburgerMenu.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
 
 // 1. 全てのイベント記事を取得
@@ -16,11 +15,14 @@ export async function getStaticPaths() {
 }
 
 // 2. 記事データを取得
+interface Props {
+    entry: CollectionEntry<"events">;
+}
 const { entry } = Astro.props;
 const { Content } = await entry.render();
 
 // ユーティリティ: 日付フォーマット
-const formatDate = (date) => {
+const formatDate = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
@@ -30,26 +32,33 @@ const formatDate = (date) => {
     return `${y}.${m}.${d} ${day}`;
 };
 
-// ステータス設定
-const getStatusConfig = (status) => {
-    switch (status) {
-        case "upcoming":
-            return { label: "COMING SOON", color: "yellow" };
-        case "open":
-            return { label: "NOW OPEN", color: "red" };
-        case "soldout":
-            return { label: "SOLD OUT", color: "red" };
-        case "archive":
-        default:
-            return { label: "ARCHIVE", color: "default" };
+// ステータス判定ロジック (日付ベース + SOLDOUT対応)
+const getEventStatus = (entry: CollectionEntry<"events">) => {
+    // 1. 手動でSOLDOUTになっていればそれを優先
+    if (entry.data.status === "soldout") {
+        return { label: "SOLD OUT", color: "red", isActive: false };
+    }
+
+    // 2. 日付判定
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(entry.data.date);
+    target.setHours(0, 0, 0, 0);
+
+    if (target.getTime() === today.getTime()) {
+        return { label: "NOW OPEN", color: "red", isActive: true };
+    } else if (target > today) {
+        return { label: "COMING SOON", color: "yellow", isActive: true };
+    } else {
+        return { label: "ARCHIVE", color: "default", isActive: false };
     }
 };
 
-const statusConfig = getStatusConfig(entry.data.status);
+const status = getEventStatus(entry);
 ---
 
 <Layout title={entry.data.title} isFluid={true}>
-    <HamburgerMenu />
+    {/* Navigation Removed */}
 
     <div class="flex flex-col lg:flex-row min-h-screen">
         {/* [LEFT COLUMN] Visual Only (PC) - Logo Center */}
@@ -108,9 +117,9 @@ const statusConfig = getStatusConfig(entry.data.status);
         <main
             class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
         >
-            {/* Mobile Header */}
+            {/* Mobile Header: Sticky Restored */}
             <header
-                class="lg:hidden flex justify-between items-center p-6 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-30"
+                class="lg:hidden flex justify-between items-center p-6 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50"
             >
                 <a
                     href="/"
@@ -132,18 +141,20 @@ const statusConfig = getStatusConfig(entry.data.status);
                 </a>
             </header>
 
-            {/* 1. Hero Section (Poster Aspect Ratio) */}
+            {/* 1. Hero Section (Image Full View) */}
             <div
-                class="relative w-full aspect-[3/4] bg-zinc-900 group border-b border-subtle overflow-hidden"
+                class="relative w-full bg-zinc-900 group border-b border-subtle overflow-hidden"
             >
-                {/* 修正: hover時のscale拡大を削除 */}
-                <div
-                    class="absolute inset-0 bg-cover bg-center"
-                    style={`background-image: url('${entry.data.image}')`}
-                >
-                </div>
+                {
+                    /* 修正: imgタグを使用し、縦横比を維持して全体を表示 (h-auto) */
+                }
+                <img
+                    src={entry.data.image}
+                    alt={entry.data.title}
+                    class="w-full h-auto block"
+                />
 
-                {/* Black Fade Gradient (Shallow) */}
+                {/* Black Fade Gradient */}
                 <div
                     class="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-background via-background/80 to-transparent"
                 >
@@ -157,10 +168,10 @@ const statusConfig = getStatusConfig(entry.data.status);
                         {/* Status Tag */}
                         <div class="mb-2">
                             <Tag
-                                variant={statusConfig.color as any}
+                                variant={status.color as any}
                                 class="shadow-lg font-en tracking-widest border border-white/10"
                             >
-                                {statusConfig.label}
+                                {status.label}
                             </Tag>
                         </div>
 
@@ -174,7 +185,7 @@ const statusConfig = getStatusConfig(entry.data.status);
                                 {entry.data.title}
                             </span>
                             <span
-                                class="text-2xl lg:text-3xl text-zinc-500 font-bold tracking-normal pb-1"
+                                class="text-2xl lg:text-3xl text-zinc-500 font-normal tracking-normal pb-1"
                             >
                                 {entry.data.subTitle}
                             </span>
@@ -397,10 +408,9 @@ const statusConfig = getStatusConfig(entry.data.status);
                 }
             </div>
 
-            {/* Sticky Footer CTA */}
+            {/* Sticky Footer CTA: Check 'isActive' status */}
             {
-                (entry.data.status === "upcoming" ||
-                    entry.data.status === "open") && (
+                status.isActive && (
                     <div class="sticky bottom-0 left-0 right-0 z-50 p-6 pb-8 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
                         <div class="w-full pointer-events-auto">
                             <Button

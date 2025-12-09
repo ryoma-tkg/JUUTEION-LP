@@ -4,7 +4,6 @@ import Button from "../components/ui/Button.astro";
 import HeroCard from "../components/ui/HeroCard.astro";
 import ArchiveCard from "../components/ui/ArchiveCard.astro";
 import Tag from "../components/ui/Tag.astro";
-import HamburgerMenu from "../components/ui/HamburgerMenu.astro";
 import SectionHeader from "../components/ui/SectionHeader.astro";
 
 import { getCollection, type CollectionEntry } from "astro:content";
@@ -44,6 +43,7 @@ const nextEvent = latestData
 			title: latestData.data.title,
 			subTitle: latestData.data.subTitle ?? "",
 			date: formatDate(latestData.data.date),
+			rawDate: latestData.data.date, // 日付判定用に生の日付データを保持
 			time: latestData.data.time,
 			place: latestData.data.place, // @はつけない
 			image: latestData.data.image,
@@ -54,6 +54,7 @@ const nextEvent = latestData
 			title: "Coming Soon",
 			subTitle: "",
 			date: "----.--.--",
+			rawDate: new Date(),
 			time: "--:--",
 			place: "TBA",
 			image: "",
@@ -72,10 +73,28 @@ const pastEvents: EventProps[] = archiveData.map(
 		slug: event.slug,
 	}),
 );
+
+// ステータス判定ロジック (日付ベース)
+const getEventStatus = (eventDate: Date) => {
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+	const target = new Date(eventDate);
+	target.setHours(0, 0, 0, 0);
+
+	if (target.getTime() === today.getTime()) {
+		return { label: "NOW OPEN", color: "red" };
+	} else if (target > today) {
+		return { label: "COMING SOON", color: "yellow" };
+	} else {
+		return { label: "ARCHIVE", color: "default" };
+	}
+};
+
+const status = getEventStatus(nextEvent.rawDate);
 ---
 
 <Layout title="TOP" isFluid={true}>
-	<HamburgerMenu />
+	{/* Navigation Removed */}
 
 	<div class="flex flex-col lg:flex-row min-h-screen">
 		{/* [LEFT COLUMN] Visual Only */}
@@ -93,9 +112,9 @@ const pastEvents: EventProps[] = archiveData.map(
 		<main
 			class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
 		>
-			{/* Mobile Header */}
+			{/* Mobile Header: sticky removed */}
 			<header
-				class="lg:hidden flex justify-between items-center p-6 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-30"
+				class="lg:hidden flex justify-between items-center p-6 border-b border-subtle bg-background z-30 relative"
 			>
 				<h1 class="text-lg font-bold tracking-tighter font-sans">
 					獸酊音
@@ -127,7 +146,7 @@ const pastEvents: EventProps[] = archiveData.map(
 						>
 							<span>{nextEvent.title}</span>
 							<span
-								class="text-3xl lg:text-4xl text-zinc-500 font-bold tracking-normal"
+								class="text-3xl lg:text-4xl text-zinc-500 font-normal tracking-normal"
 								>{nextEvent.subTitle}</span
 							>
 						</h2>
@@ -137,8 +156,9 @@ const pastEvents: EventProps[] = archiveData.map(
 							class="flex flex-wrap items-center gap-x-5 gap-y-2 mb-8 text-sm font-bold text-white tracking-widest font-en"
 						>
 							<div class="flex items-center gap-3">
-								<Tag variant="yellow" class="font-en"
-									>LATEST</Tag
+								<Tag
+									variant={status.color as any}
+									class="font-en">{status.label}</Tag
 								>
 								<span>{nextEvent.date}</span>
 							</div>
@@ -148,7 +168,16 @@ const pastEvents: EventProps[] = archiveData.map(
 								></span>
 								<span>{nextEvent.time}</span>
 								<span class="w-px h-3 bg-white/50"></span>
-								<span>@ {nextEvent.place}</span>
+								{
+									/* @の沈み込み修正: relative -top-[1px] で微調整 */
+								}
+								<span
+									><span
+										class="relative -top-[1px] inline-block"
+										>@</span
+									>
+									{nextEvent.place}</span
+								>
 							</div>
 						</div>
 
@@ -230,7 +259,10 @@ const pastEvents: EventProps[] = archiveData.map(
 							>
 								● ARCHIVE
 							</p>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+							{/* GapをSP時は4 (16px) に狭める */}
+							<div
+								class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6"
+							>
 								{
 									pastEvents.map((event) => (
 										<ArchiveCard
