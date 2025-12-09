@@ -1,9 +1,45 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+
+// --- Style Definitions ---
+const STYLES = {
+    // リストアイテムのコンテナ
+    itemCard:
+        "bg-surface border border-subtle rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-all hover:border-zinc-700 group relative overflow-hidden",
+
+    // テキスト周り
+    title: "text-lg font-bold text-white font-en tracking-tight leading-none mb-1",
+    meta: "text-xs font-bold text-zinc-500 font-en tracking-widest uppercase flex items-center gap-3",
+
+    // ステータスバッジ
+    badge: {
+        base: "px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase border",
+        upcoming:
+            "bg-accent-yellow/10 text-accent-yellow border-accent-yellow/30",
+        open: "bg-accent-red/10 text-accent-red border-accent-red/30",
+        archive: "bg-zinc-800 text-zinc-500 border-zinc-700",
+        soldout:
+            "bg-zinc-800 text-zinc-400 border-zinc-700 line-through decoration-red-500",
+    },
+
+    // ボタン
+    actionBtn:
+        "w-8 h-8 rounded-full flex items-center justify-center border transition-colors",
+    editBtn:
+        "border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800 hover:border-zinc-600",
+    deleteBtn:
+        "border-zinc-700 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30",
+
+    // ローディング
+    loading:
+        "flex flex-col items-center justify-center py-20 text-zinc-500 animate-pulse gap-4",
+    empty: "text-center py-20 text-zinc-600 border border-dashed border-zinc-800 rounded-xl",
+};
 ---
 
 <AdminLayout title="Dashboard">
     <div class="max-w-5xl mx-auto space-y-8">
+        {/* Header */}
         <div
             class="flex justify-between items-end border-b border-zinc-800 pb-4"
         >
@@ -11,40 +47,269 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
                 <h2 class="text-3xl font-bold font-en tracking-tight">
                     Events
                 </h2>
-                <p class="text-zinc-500 mt-1">イベント情報の管理・編集</p>
+                <p class="text-zinc-500 mt-1 text-sm">登録済みイベントの管理</p>
             </div>
             <a
                 href="/admin/new"
-                class="bg-accent-blue text-white font-bold px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                class="bg-white text-black font-bold px-4 py-2.5 rounded-lg hover:bg-zinc-200 transition-colors flex items-center gap-2 text-sm"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    ><line x1="12" y1="5" x2="12" y2="19"></line><line
-                        x1="5"
-                        y1="12"
-                        x2="19"
-                        y2="12"></line></svg
                 >
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
                 新規作成
             </a>
         </div>
 
-        {/* イベント一覧エリア (後でFirestoreと接続) */}
-        <div class="grid gap-4">
+        {/* Loading State */}
+        <div id="loading-indicator" class={STYLES.loading}>
             <div
-                class="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 text-center text-zinc-500"
+                class="w-8 h-8 border-2 border-zinc-800 border-t-accent-blue rounded-full animate-spin"
             >
-                <p>現在、イベントはFirestoreから読み込まれていません。</p>
-                <p class="text-sm mt-2">（次のステップで実装します）</p>
             </div>
+            <p class="text-xs font-mono">LOADING DATA...</p>
+        </div>
+
+        {/* Events List Container */}
+        <div id="events-list" class="grid gap-3 hidden">
+            {/* JSでここに要素が追加されます */}
+        </div>
+
+        {/* Empty State (Hidden by default) */}
+        <div id="empty-state" class={`${STYLES.empty} hidden`}>
+            <p class="font-bold text-lg mb-1">NO EVENTS FOUND</p>
+            <p class="text-xs">まだイベントが登録されていません</p>
         </div>
     </div>
+
+    {/* Template for Event Item */}
+    <template id="event-item-template">
+        <div class={STYLES.itemCard}>
+            {/* Thumbnail */}
+            <div
+                class="w-16 h-16 sm:w-20 sm:h-20 shrink-0 bg-zinc-800 rounded-lg overflow-hidden border border-white/5 relative"
+            >
+                <img
+                    src=""
+                    class="w-full h-full object-cover event-thumb opacity-80"
+                />
+            </div>
+
+            {/* Info */}
+            <div class="flex-1 min-w-0 py-1 space-y-1">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="event-badge"></span>
+                    <span
+                        class="text-[10px] text-zinc-500 font-mono event-id hidden sm:inline-block"
+                    ></span>
+                </div>
+                <h3 class="event-title truncate"></h3>
+                <div class={STYLES.meta}>
+                    <span class="event-date flex items-center gap-1"></span>
+                    <span class="w-px h-2 bg-zinc-800"></span>
+                    <span class="event-place truncate text-zinc-600"></span>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div
+                class="flex items-center gap-2 mt-2 sm:mt-0 ml-auto pl-4 border-l border-zinc-800/50"
+            >
+                <a
+                    href=""
+                    class={`${STYLES.actionBtn} ${STYLES.editBtn} btn-edit`}
+                    title="編集"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path
+                            d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
+                        ></path></svg
+                    >
+                </a>
+                <button
+                    class={`${STYLES.actionBtn} ${STYLES.deleteBtn} btn-delete`}
+                    title="削除"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><polyline points="3 6 5 6 21 6"></polyline><path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        ></path></svg
+                    >
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        import { db } from "../../lib/firebase/client";
+        import {
+            collection,
+            getDocs,
+            query,
+            orderBy,
+            deleteDoc,
+            doc,
+        } from "firebase/firestore";
+
+        const loading = document.getElementById("loading-indicator");
+        const list = document.getElementById("events-list");
+        const empty = document.getElementById("empty-state");
+        const template = document.getElementById(
+            "event-item-template",
+        ) as HTMLTemplateElement;
+
+        // Badge Styles Mapping
+        const BADGE_STYLES: Record<string, string> = {
+            upcoming:
+                "bg-accent-yellow/10 text-accent-yellow border-accent-yellow/30",
+            open: "bg-accent-red/10 text-accent-red border-accent-red/30",
+            archive: "bg-zinc-800 text-zinc-500 border-zinc-700",
+            soldout:
+                "bg-zinc-800 text-zinc-400 border-zinc-700 line-through decoration-red-500",
+        };
+
+        // Date Formatter
+        const formatDate = (dateObj: any) => {
+            if (!dateObj) return "---";
+            const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            const week = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
+                d.getDay()
+            ];
+            return `${y}.${m}.${day} ${week}`;
+        };
+
+        const fetchEvents = async () => {
+            try {
+                // Fetch data ordered by date desc
+                const q = query(
+                    collection(db, "events"),
+                    orderBy("date", "desc"),
+                );
+                const querySnapshot = await getDocs(q);
+
+                loading?.classList.add("hidden");
+
+                if (querySnapshot.empty) {
+                    empty?.classList.remove("hidden");
+                    return;
+                }
+
+                list?.classList.remove("hidden");
+                list!.innerHTML = ""; // Clear list
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const id = docSnap.id;
+
+                    const clone = template.content.cloneNode(
+                        true,
+                    ) as DocumentFragment;
+
+                    // 1. Set Image
+                    const img = clone.querySelector(
+                        ".event-thumb",
+                    ) as HTMLImageElement;
+                    img.src = data.thumbnail || "/favicon.svg";
+
+                    // 2. Set Status Badge
+                    const badge = clone.querySelector(
+                        ".event-badge",
+                    ) as HTMLElement;
+                    const status = (data.status || "archive") as string;
+                    badge.innerText = status;
+                    badge.className = `px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase border ${BADGE_STYLES[status] || BADGE_STYLES.archive}`;
+
+                    // 3. Set Texts
+                    (
+                        clone.querySelector(".event-title") as HTMLElement
+                    ).innerText = data.title;
+                    (
+                        clone.querySelector(".event-id") as HTMLElement
+                    ).innerText = `ID: ${id.slice(0, 6)}...`;
+                    (
+                        clone.querySelector(".event-date") as HTMLElement
+                    ).innerText = formatDate(data.date);
+                    (
+                        clone.querySelector(".event-place") as HTMLElement
+                    ).innerText = `@${data.place}`;
+
+                    // 4. Setup Actions
+                    const editBtn = clone.querySelector(
+                        ".btn-edit",
+                    ) as HTMLAnchorElement;
+                    // ▼ 修正箇所: URLパラメータ方式に変更
+                    editBtn.href = `/admin/edit?id=${id}`;
+
+                    const deleteBtn = clone.querySelector(
+                        ".btn-delete",
+                    ) as HTMLButtonElement;
+                    deleteBtn.onclick = async () => {
+                        if (
+                            confirm(
+                                `イベント「${data.title}」を削除しますか？\n※この操作は取り消せません。`,
+                            )
+                        ) {
+                            await handleDelete(id, deleteBtn);
+                        }
+                    };
+
+                    list?.appendChild(clone);
+                });
+            } catch (error) {
+                console.error("Fetch error:", error);
+                alert("データの読み込みに失敗しました。");
+            }
+        };
+
+        // Delete Handler
+        const handleDelete = async (id: string, btn: HTMLButtonElement) => {
+            try {
+                btn.disabled = true;
+                btn.innerHTML = "...";
+                await deleteDoc(doc(db, "events", id));
+                const item = btn.closest("div.bg-surface");
+                item?.remove();
+                if (list?.children.length === 0) {
+                    list.classList.add("hidden");
+                    empty?.classList.remove("hidden");
+                }
+            } catch (e) {
+                alert("削除に失敗しました: " + e);
+                btn.disabled = false;
+            }
+        };
+
+        fetchEvents();
+    </script>
 </AdminLayout>

@@ -5,34 +5,39 @@ import HeroCard from "../components/ui/HeroCard.astro";
 import ArchiveCard from "../components/ui/ArchiveCard.astro";
 import Tag from "../components/ui/Tag.astro";
 import SectionHeader from "../components/ui/SectionHeader.astro";
-// ロゴをインポート
 import logo from "../assets/logo/jto_logo.svg";
 
-import { getCollection, type CollectionEntry } from "astro:content";
-import { getImage } from "astro:assets";
-import type { ImageMetadata } from "astro";
+// ▼ Firebase関連のインポートに変更
+import { db } from "../lib/firebase/client";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 
-// 型定義を更新
-type EventProps = {
-	title: string;
-	subTitle?: string;
-	date: string;
-	place: string;
-	image: ImageMetadata;
-	slug: string;
-};
+// 1. データ取得 (Firestore)
+let allEvents: any[] = [];
+try {
+	// 日付の新しい順（降順）で取得
+	const q = query(collection(db, "events"), orderBy("date", "desc"));
+	const snapshot = await getDocs(q);
 
-// 1. データ取得
-const allEvents = await getCollection("events");
-const sortedEvents = allEvents.sort(
-	(a: CollectionEntry<"events">, b: CollectionEntry<"events">) =>
-		b.data.date.valueOf() - a.data.date.valueOf(),
-);
-const latestData = sortedEvents[0];
-const archiveData = sortedEvents.slice(1);
+	allEvents = snapshot.docs.map((doc) => {
+		const data = doc.data();
+		return {
+			id: doc.id,
+			...data,
+			// TimestampをDate型に変換
+			date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
+		};
+	});
+} catch (e) {
+	console.error("Firestore fetch error:", e);
+	// エラー時は空配列（ビルドが落ちないように）
+}
+
+const latestData = allEvents[0]; // 最新1件
+const archiveData = allEvents.slice(1); // それ以降
 
 // ユーティリティ
 const formatDate = (date: Date) => {
+	if (!date) return "---";
 	const y = date.getFullYear();
 	const m = String(date.getMonth() + 1).padStart(2, "0");
 	const d = String(date.getDate()).padStart(2, "0");
@@ -42,39 +47,49 @@ const formatDate = (date: Date) => {
 	return `${y}.${m}.${d} ${day}`;
 };
 
-// LATESTデータ
+// LATESTデータ (Hero Section用)
 const nextEvent = latestData
 	? {
-			title: latestData.data.title,
-			subTitle: latestData.data.subTitle ?? "",
-			date: formatDate(latestData.data.date),
-			rawDate: latestData.data.date,
-			time: latestData.data.time,
-			place: latestData.data.place,
-			// 変更: カードにはサムネイルを渡す
-			image: latestData.data.thumbnail,
-			// 追加: 背景用にはメインビジュアルを使う
-			bgImage: latestData.data.mainVisual,
-			price: latestData.data.price,
-			slug: latestData.slug,
+			title: latestData.title,
+			subTitle: latestData.subTitle ?? "",
+			date: formatDate(latestData.date),
+			rawDate: latestData.date,
+			time: latestData.time,
+			place: latestData.place,
+			// HeroCardには「正方形のサムネイル」を渡す
+			image: latestData.thumbnail,
+			// 背景には「縦長のメインビジュアル」を使う
+			bgImage: latestData.mainVisual,
+			price: latestData.price,
+			// 詳細ページへのリンク（IDベースに変更するなら /events/[id] だが、今回はslugが無いのでIDを使うか検討）
+			// ※詳細ページ側も後でFirestore対応が必要ですが、一旦IDを渡します
+			href: `/events/${latestData.id}`,
 		}
 	: null;
 
 // ARCHIVEデータ
-const pastEvents: EventProps[] = archiveData.map(
-	(event: CollectionEntry<"events">) => ({
-		title: event.data.title,
-		subTitle: event.data.subTitle,
-		date: formatDate(event.data.date),
-		place: event.data.place,
-		// 変更: 一覧にはサムネイルを使う
-		image: event.data.thumbnail,
-		slug: event.slug,
-	}),
-);
+const pastEvents = archiveData.map((event) => ({
+	title: event.title,
+	subTitle: event.subTitle,
+	date: formatDate(event.date),
+	place: event.place,
+	image: event.thumbnail,
+	href: `/events/${event.id}`,
+}));
 
 // ステータス判定ロジック
-const getEventStatus = (eventDate: Date) => {
+const getEventStatus = (eventDate: Date, statusOverride?: string) => {
+	// 管理画面で手動設定されたステータスがあれば優先
+	if (statusOverride && statusOverride !== "upcoming") {
+		// upcoming以外(soldout, open, archive)ならそれを色判定に使う
+		if (statusOverride === "soldout")
+			return { label: "SOLD OUT", color: "default" }; // 赤線などはCSSでやるが一旦default
+		if (statusOverride === "open")
+			return { label: "NOW OPEN", color: "red" };
+		if (statusOverride === "archive")
+			return { label: "ARCHIVE", color: "default" };
+	}
+
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 	const target = new Date(eventDate);
@@ -90,33 +105,28 @@ const getEventStatus = (eventDate: Date) => {
 };
 
 const status = nextEvent
-	? getEventStatus(nextEvent.rawDate)
+	? getEventStatus(nextEvent.rawDate, latestData.status)
 	: { label: "", color: "default" };
 
-// 背景画像の最適化 (nextEventがある場合のみ)
-// PC背景には高画質な mainVisual を使用
-let optimizedBgSrc = "";
-if (nextEvent) {
-	const optimizedBg = await getImage({
-		src: nextEvent.bgImage,
-		format: "webp",
-		quality: 80,
-	});
-	optimizedBgSrc = optimizedBg.src;
-}
+// 背景画像のURL (FirestoreのURLをそのまま使う)
+const bgStyle = nextEvent?.bgImage
+	? `background-image: url('${nextEvent.bgImage}')`
+	: "";
 ---
 
 <Layout title="TOP" isFluid={true}>
 	{
-		nextEvent && (
+		nextEvent ? (
 			<>
 				<div class="flex flex-col lg:flex-row min-h-screen">
 					{/* [LEFT COLUMN] Visual Only */}
 					<aside class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0">
 						<div
-							class="absolute inset-0 bg-cover bg-center"
-							style={`background-image: url('${optimizedBgSrc}')`}
-						></div>
+							class="absolute inset-0 bg-cover bg-center transition-all duration-700 hover:scale-105"
+							style={bgStyle}
+						/>
+						{/* Overlay for readability if needed */}
+						<div class="absolute inset-0 bg-black/30" />
 					</aside>
 
 					{/* [RIGHT COLUMN] Content */}
@@ -137,12 +147,12 @@ if (nextEvent) {
 							id="top"
 							class="relative w-full aspect-[4/5] lg:aspect-[16/10] overflow-hidden border-b border-subtle bg-surface"
 						>
-							{/* Mobile BG: ここも高画質版を使用 */}
+							{/* Mobile BG */}
 							<div
 								class="lg:hidden absolute inset-0 bg-cover bg-center"
-								style={`background-image: url('${optimizedBgSrc}')`}
-							></div>
-							<div class="lg:hidden absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
+								style={bgStyle}
+							/>
+							<div class="lg:hidden absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
 
 							<div class="absolute inset-0 p-8 md:p-12 lg:p-16 flex flex-col justify-end items-start">
 								<div class="w-full relative z-10">
@@ -181,11 +191,7 @@ if (nextEvent) {
 									<div class="w-full sm:w-auto min-w-[200px]">
 										<Button
 											variant="primary"
-											href={
-												nextEvent.slug
-													? `/events/${nextEvent.slug}`
-													: "#"
-											}
+											href={nextEvent.href}
 										>
 											詳細・チケット予約
 										</Button>
@@ -230,7 +236,7 @@ if (nextEvent) {
 									title="Information"
 									accentColor="yellow"
 									link={{
-										href: "/events",
+										href: "/events", // 一覧ページ（未作成なら不要かも）
 										label: "VIEW ALL →",
 									}}
 								/>
@@ -241,7 +247,6 @@ if (nextEvent) {
 										<p class="text-sm text-accent-yellow font-bold tracking-widest font-en pl-1">
 											● NEXT EVENT
 										</p>
-										{/* 変更なし (HeroCard側で正方形調整はCSSで行うが、データとしてはthumbnailが渡される) */}
 										<HeroCard
 											title={nextEvent.title}
 											subTitle={nextEvent.subTitle}
@@ -250,38 +255,37 @@ if (nextEvent) {
 											place={nextEvent.place}
 											price={nextEvent.price}
 											image={nextEvent.image}
-											href={
-												nextEvent.slug
-													? `/events/${nextEvent.slug}`
-													: "#"
-											}
+											href={nextEvent.href}
 										/>
 									</div>
 
 									{/* Archive */}
-									<div class="space-y-4">
-										<p class="text-sm text-text-muted font-bold tracking-widest font-en pl-1">
-											● ARCHIVE
-										</p>
-										<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-											{pastEvents.map((event) => (
-												<ArchiveCard
-													title={event.title}
-													subTitle={event.subTitle}
-													date={event.date}
-													place={event.place}
-													image={event.image}
-													href={`/events/${event.slug}`}
-												/>
-											))}
+									{pastEvents.length > 0 && (
+										<div class="space-y-4">
+											<p class="text-sm text-text-muted font-bold tracking-widest font-en pl-1">
+												● ARCHIVE
+											</p>
+											<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+												{pastEvents.map((event) => (
+													<ArchiveCard
+														title={event.title}
+														subTitle={
+															event.subTitle
+														}
+														date={event.date}
+														place={event.place}
+														image={event.image}
+														href={event.href}
+													/>
+												))}
+											</div>
 										</div>
-									</div>
+									)}
 								</div>
 							</section>
 
 							{/* 4. Social & VRC */}
 							<section id="social" class="space-y-10">
-								{/* ... (Socialセクションは変更なし) ... */}
 								<SectionHeader
 									title="Join the Floor"
 									accentColor="red"
@@ -304,14 +308,12 @@ if (nextEvent) {
 												</svg>
 											</div>
 											<div>
-												<>
-													<p class="text-base font-bold text-text-main font-en tracking-wide">
-														Official X
-													</p>
-													<p class="text-xs text-text-muted mt-0.5 font-en">
-														Latest Information
-													</p>
-												</>
+												<p class="text-base font-bold text-text-main font-en tracking-wide">
+													Official X
+												</p>
+												<p class="text-xs text-text-muted mt-0.5 font-en">
+													Latest Information
+												</p>
 											</div>
 										</div>
 										<span class="text-xs text-subtle group-hover:text-accent-blue transition-colors font-en">
@@ -335,34 +337,30 @@ if (nextEvent) {
 													stroke-linecap="round"
 													stroke-linejoin="round"
 												>
-													<>
-														<rect
-															width="20"
-															height="20"
-															x="2"
-															y="2"
-															rx="5"
-															ry="5"
-														/>
-														<path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-														<line
-															x1="17.5"
-															x2="17.51"
-															y1="6.5"
-															y2="6.5"
-														/>
-													</>
+													<rect
+														width="20"
+														height="20"
+														x="2"
+														y="2"
+														rx="5"
+														ry="5"
+													/>
+													<path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+													<line
+														x1="17.5"
+														x2="17.51"
+														y1="6.5"
+														y2="6.5"
+													/>
 												</svg>
 											</div>
 											<div>
-												<>
-													<p class="text-base font-bold text-text-main font-en tracking-wide">
-														Instagram
-													</p>
-													<p class="text-xs text-text-muted mt-0.5 font-en">
-														Photo Archive
-													</p>
-												</>
+												<p class="text-base font-bold text-text-main font-en tracking-wide">
+													Instagram
+												</p>
+												<p class="text-xs text-text-muted mt-0.5 font-en">
+													Photo Archive
+												</p>
 											</div>
 										</div>
 										<span class="text-xs text-subtle group-hover:text-accent-red transition-colors font-en">
@@ -380,14 +378,12 @@ if (nextEvent) {
 												</span>
 											</div>
 											<div>
-												<>
-													<p class="text-base font-bold text-text-main font-en tracking-wide">
-														VRChat Group
-													</p>
-													<p class="text-xs text-text-muted mt-0.5 font-en">
-														Join the virtual venue
-													</p>
-												</>
+												<p class="text-base font-bold text-text-main font-en tracking-wide">
+													VRChat Group
+												</p>
+												<p class="text-xs text-text-muted mt-0.5 font-en">
+													Join the virtual venue
+												</p>
 											</div>
 										</div>
 										<span class="text-xs text-subtle group-hover:text-accent-yellow transition-colors font-en">
@@ -406,6 +402,17 @@ if (nextEvent) {
 					</main>
 				</div>
 			</>
+		) : (
+			<div class="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white p-4 text-center">
+				<img
+					src={logo.src}
+					alt="JUUTEION"
+					class="w-24 opacity-50 mb-4"
+				/>
+				<p class="font-en tracking-widest text-sm text-zinc-500">
+					NO EVENTS SCHEDULED
+				</p>
+			</div>
 		)
 	}
 </Layout>

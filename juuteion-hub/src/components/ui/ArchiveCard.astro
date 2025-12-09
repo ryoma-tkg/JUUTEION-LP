@@ -7,29 +7,39 @@ interface Props {
     subTitle?: string;
     date: string;
     place: string;
-    // 画像オブジェクトを受け取れるように変更
-    image: ImageMetadata;
+    // ▼ 修正: 文字列(URL)も許容する
+    image: ImageMetadata | string;
     href?: string;
 }
 
 const { title, subTitle, date, place, image, href } = Astro.props;
 const Tag = href ? "a" : "div";
 
-// 背景画像用に最適化されたURLを生成
-const optimizedBg = await getImage({ src: image, format: "webp", quality: 80 });
+// ▼ 修正: 画像ロジック
+let bgUrl = "";
+if (typeof image === "string") {
+    bgUrl = image;
+} else {
+    const optimized = await getImage({
+        src: image,
+        format: "webp",
+        quality: 80,
+    });
+    bgUrl = optimized.src;
+}
 ---
 
 <Tag
     href={href}
     class="group cursor-pointer flex sm:block items-center sm:items-stretch gap-4 sm:gap-0 sm:space-y-3"
 >
-    {/* Image Area: Mobile=Fixed Width / PC=Full Width */}
+    {/* Image Area */}
     <div
         class="relative w-28 sm:w-full aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden bg-surface border border-subtle shrink-0"
     >
         <div
             class="absolute inset-0 bg-cover bg-center grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
-            style={`background-image: url('${optimizedBg.src}')`}
+            style={`background-image: url('${bgUrl}')`}
         >
         </div>
         <div
@@ -40,7 +50,6 @@ const optimizedBg = await getImage({ src: image, format: "webp", quality: 80 });
 
     {/* Content Area */}
     <div class="space-y-1 sm:pl-1 min-w-0">
-        {/* Title & SubTitle */}
         <h4
             class="text-base font-bold text-text-main group-hover:text-text-main transition-colors font-en flex flex-col sm:flex-row sm:flex-wrap sm:items-baseline gap-x-2 leading-tight"
         >
@@ -54,7 +63,6 @@ const optimizedBg = await getImage({ src: image, format: "webp", quality: 80 });
             }
         </h4>
 
-        {/* Meta Info */}
         <p class="text-xs text-text-muted flex items-center gap-2 font-en">
             <span>{date}</span>
             <span class="w-px h-2 bg-subtle"></span>
