@@ -22,16 +22,20 @@ jobs:
           # 1. 一時フォルダを作成
           mkdir -p /tmp/ai-ready
 
-          # 2. プロジェクト全体を一旦コピー (juuteion-hub と README)
-          # ※ .git などの隠しファイルは除外されます
+          # 2. プロジェクト全体を一旦コピー (juuteion-hub)
           cp -R juuteion-hub /tmp/ai-ready/
-          cp README.md /tmp/ai-ready/ 2>/dev/null || true
 
-          # 3. 【ここ重要】AIにとって「不要なファイル」だけをピンポイントで削除
-          # これなら必要なコード（src等）は確実に残ります
+          # 3. 【追加】ルートにあるドキュメント系ファイルをコピー
+          # (存在しなくてもエラーで止まらないように || true を付けています)
+          cp README.md /tmp/ai-ready/ 2>/dev/null || true
+          cp roadmap.md /tmp/ai-ready/ 2>/dev/null || true
+          cp readmedev.md /tmp/ai-ready/ 2>/dev/null || true
+          cp READNEdev.md /tmp/ai-ready/ 2>/dev/null || true
+
+          # 4. ノイズ除去 (juuteion-hubの中身を掃除)
           cd /tmp/ai-ready/juuteion-hub
 
-          # ノイズ除去リスト
+          # node_modules や lockファイル削除
           rm -rf node_modules
           rm -rf .astro
           rm -rf dist
@@ -40,13 +44,12 @@ jobs:
           rm -f yarn.lock
           rm -f pnpm-lock.yaml
           
-          # 容量を食うアセットファイルを除去（画像・フォント）
-          # ※ favicon.svg だけは軽いので残したい場合を考慮して images/fonts の中身を消す
+          # 重いアセットファイルを除去（画像・フォント）
           rm -rf public/images/*
           rm -rf public/fonts/*
-          rm -rf src/assets/*.{jpg,png,webp,avif} # src内の重い画像もカット
+          rm -rf src/assets/*.{jpg,png,webp,avif}
           
-          # .vscode設定などはAIには不要なので削除
+          # 不要な設定・隠しファイル
           rm -rf .vscode
           rm -rf .DS_Store
 
@@ -55,7 +58,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # ai-chat ブランチを空の状態から作成（履歴を切り離す）
+          # ai-chat ブランチを空の状態から作成（履歴切り離し）
           git checkout --orphan ai-chat
           
           # 現在のブランチの中身を全削除
@@ -66,5 +69,5 @@ jobs:
 
           # コミット＆強制プッシュ
           git add .
-          git commit -m "A- (juuteion-hub): ${{ github.event.head_commit.message }}"
+          git commit -m "AI用同期 (juuteion-hub + docs): ${{ github.event.head_commit.message }}"
           git push origin ai-chat --force
