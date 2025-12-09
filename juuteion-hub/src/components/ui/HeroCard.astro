@@ -7,12 +7,14 @@ interface Props {
     place: string;
     price: string;
     image: string;
+    href?: string; // リンク用に追加
 }
 
-const { title, subTitle, date, time, place, price, image } = Astro.props;
+const { title, subTitle, date, time, place, price, image, href } = Astro.props;
+const Tag = href ? "a" : "div";
 ---
 
-<div class="w-full relative group cursor-pointer">
+<Tag href={href} class="block w-full relative group cursor-pointer">
     {/* Glow Effect */}
     <div
         class="absolute -inset-0.5 bg-gradient-to-br from-accent-blue via-accent-yellow to-accent-red rounded-[34px] opacity-30 blur-lg group-hover:opacity-60 transition duration-500"
@@ -34,30 +36,25 @@ const { title, subTitle, date, time, place, price, image } = Astro.props;
             >
             </div>
 
-            {/* Floating Tag */}
-            <div class="absolute top-4 left-4">
-                <span
-                    class="bg-accent-yellow text-black text-xs font-bold px-3 py-1 rounded-full tracking-widest shadow-lg shadow-accent-yellow/20 font-en"
-                >
-                    ● NEXT EVENT
-                </span>
-            </div>
+            {/* NEXT EVENT Tag Removed */}
         </div>
 
         {/* Content Area */}
         <div class="relative p-6 -mt-12 space-y-5">
             <div>
-                {
-                    /* 混植対応: font-en を指定することで英数字はMontserrat、日本語はIBM Plex Sansになります */
-                }
+                {/* Title & SubTitle: Same Line */}
                 <h3
-                    class="text-3xl font-bold text-white tracking-tighter leading-none mb-3 drop-shadow-md font-en"
+                    class="flex flex-wrap items-baseline gap-x-3 text-3xl font-bold text-white tracking-tighter leading-none mb-3 drop-shadow-md font-en"
                 >
-                    {title}<br />
-                    <span class="text-accent-blue">{subTitle}</span>
+                    <span>{title}</span>
+                    <span
+                        class="text-xl text-zinc-500 font-bold tracking-normal"
+                        >{subTitle}</span
+                    >
                 </h3>
+
                 <div
-                    class="flex items-center gap-4 text-sm font-medium text-zinc-400 font-en"
+                    class="flex items-center gap-4 text-sm font-bold text-zinc-400 font-en"
                 >
                     <span class="flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-accent-red"
@@ -67,7 +64,11 @@ const { title, subTitle, date, time, place, price, image } = Astro.props;
                     <span class="w-px h-3 bg-white/10"></span>
                     <span>{time}</span>
                     <span class="w-px h-3 bg-white/10"></span>
-                    <span>@{place}</span>
+                    {/* @ is Bold and Single */}
+                    <span
+                        ><span class="text-zinc-300">@</span>
+                        {place}</span
+                    >
                 </div>
             </div>
 
@@ -104,4 +105,4 @@ const { title, subTitle, date, time, place, price, image } = Astro.props;
             </div>
         </div>
     </div>
-</div>
+</Tag>
