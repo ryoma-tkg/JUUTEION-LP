@@ -36,6 +36,6 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JUUTEION_WEB }}' # ※ここはあなたのIDのままにしてください
           channelId: 'dev-test'
-          projectId: 'juuteion-lp'
+          projectId: 'juuteion-web'
           expires: 7d
           entryPoint: ./juuteion-hub # ▼ 追加 2: Firebaseの設定ファイルの場所を指定
