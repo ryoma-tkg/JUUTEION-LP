@@ -9,13 +9,16 @@ import SectionHeader from "../components/ui/SectionHeader.astro";
 import logo from "../assets/logo/jto_logo.svg";
 
 import { getCollection, type CollectionEntry } from "astro:content";
+import { getImage } from "astro:assets";
+import type { ImageMetadata } from "astro";
 
+// 型定義を更新
 type EventProps = {
 	title: string;
 	subTitle?: string;
 	date: string;
 	place: string;
-	image: string;
+	image: ImageMetadata; // string から変更
 	slug: string;
 };
 
@@ -45,24 +48,14 @@ const nextEvent = latestData
 			title: latestData.data.title,
 			subTitle: latestData.data.subTitle ?? "",
 			date: formatDate(latestData.data.date),
-			rawDate: latestData.data.date, // 日付判定用に生の日付データを保持
+			rawDate: latestData.data.date,
 			time: latestData.data.time,
-			place: latestData.data.place, // @はつけない
+			place: latestData.data.place,
 			image: latestData.data.image,
 			price: latestData.data.price,
 			slug: latestData.slug,
 		}
-	: {
-			title: "Coming Soon",
-			subTitle: "",
-			date: "----.--.--",
-			rawDate: new Date(),
-			time: "--:--",
-			place: "TBA",
-			image: "",
-			price: "",
-			slug: "",
-		};
+	: null; // null処理に変更（データがない場合のエラー回避）
 
 // ARCHIVEデータ
 const pastEvents: EventProps[] = archiveData.map(
@@ -76,7 +69,7 @@ const pastEvents: EventProps[] = archiveData.map(
 	}),
 );
 
-// ステータス判定ロジック (日付ベース)
+// ステータス判定ロジック
 const getEventStatus = (eventDate: Date) => {
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
@@ -92,339 +85,324 @@ const getEventStatus = (eventDate: Date) => {
 	}
 };
 
-const status = getEventStatus(nextEvent.rawDate);
+const status = nextEvent
+	? getEventStatus(nextEvent.rawDate)
+	: { label: "", color: "default" };
+
+// 背景画像の最適化 (nextEventがある場合のみ)
+let optimizedBgSrc = "";
+if (nextEvent) {
+	const optimizedBg = await getImage({
+		src: nextEvent.image,
+		format: "webp",
+		quality: 80,
+	});
+	optimizedBgSrc = optimizedBg.src;
+}
 ---
 
 <Layout title="TOP" isFluid={true}>
-	{/* Navigation Removed */}
-
-	<div class="flex flex-col lg:flex-row min-h-screen">
-		{/* [LEFT COLUMN] Visual Only */}
-		<aside
-			class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0"
-		>
-			<div
-				class="absolute inset-0 bg-cover bg-center"
-				style={`background-image: url('${nextEvent.image}')`}
-			>
-			</div>
-		</aside>
-
-		{/* [RIGHT COLUMN] Content */}
-		<main
-			class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
-		>
-			{/* Mobile Header: Logo Centered & Sticky */}
-			<header
-				class="lg:hidden flex justify-center items-center p-4 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50 h-16"
-			>
-				<div
-					class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-				>
-					<img
-						src={logo.src}
-						alt="JUUTEION"
-						class="h-8 w-auto opacity-100 mb-2"
-					/>
-				</div>
-			</header>
-
-			{/* 1. Hero Section */}
-			<section
-				id="top"
-				class="relative w-full aspect-[4/5] lg:aspect-[16/10] overflow-hidden border-b border-subtle bg-surface"
-			>
-				<div
-					class="lg:hidden absolute inset-0 bg-cover bg-center"
-					style={`background-image: url('${nextEvent.image}')`}
-				>
-				</div>
-				<div
-					class="lg:hidden absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"
-				>
-				</div>
-
-				<div
-					class="absolute inset-0 p-8 md:p-12 lg:p-16 flex flex-col justify-end items-start"
-				>
-					<div class="w-full relative z-10">
-						{/* Title: Inline Style */}
-						<h2
-							class="flex flex-wrap items-baseline gap-x-4 text-5xl lg:text-6xl font-bold text-white tracking-tighter leading-none mb-6 drop-shadow-2xl lg:drop-shadow-none font-en"
-						>
-							<span>{nextEvent.title}</span>
-							<span
-								class="text-3xl lg:text-4xl text-zinc-500 font-normal tracking-normal"
-								>{nextEvent.subTitle}</span
-							>
-						</h2>
-
-						{/* Meta Info: font-en */}
+	{
+		/* nextEventがない場合のガード節は省略（通常運用では必ずデータがある前提） */
+	}
+	{
+		nextEvent && (
+			<>
+				<div class="flex flex-col lg:flex-row min-h-screen">
+					{/* [LEFT COLUMN] Visual Only */}
+					<aside class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0">
 						<div
-							class="flex flex-wrap items-center gap-x-5 gap-y-2 mb-8 text-sm font-bold text-white tracking-widest font-en"
-						>
-							<div class="flex items-center gap-3">
-								<Tag
-									variant={status.color as any}
-									class="font-en">{status.label}</Tag
-								>
-								<span>{nextEvent.date}</span>
+							class="absolute inset-0 bg-cover bg-center"
+							style={`background-image: url('${optimizedBgSrc}')`}
+						/>
+					</aside>
+
+					{/* [RIGHT COLUMN] Content */}
+					<main class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle">
+						{/* Mobile Header */}
+						<header class="lg:hidden flex justify-center items-center p-4 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50 h-16">
+							<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+								<img
+									src={logo.src}
+									alt="JUUTEION"
+									class="h-8 w-auto opacity-100 mb-2"
+								/>
 							</div>
-							<div class="flex items-center gap-3 opacity-90">
-								<span
-									class="hidden sm:block w-px h-3 bg-white/50"
-								></span>
-								<span>{nextEvent.time}</span>
-								<span class="w-px h-3 bg-white/50"></span>
-								{
-									/* @の沈み込み修正: relative -top-[1px] で微調整 */
-								}
-								<span
-									><span
-										class="relative -top-[1px] inline-block"
-										>@</span
-									>
-									{nextEvent.place}</span
-								>
-							</div>
-						</div>
+						</header>
 
-						<div class="w-full sm:w-auto min-w-[200px]">
-							<Button
-								variant="primary"
-								href={nextEvent.slug
-									? `/events/${nextEvent.slug}`
-									: "#"}
-							>
-								詳細・チケット予約
-							</Button>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Inner Content */}
-			<div class="w-full px-8 md:px-12 py-24 space-y-32">
-				{/* 2. About */}
-				<section id="about" class="space-y-10">
-					<SectionHeader title="About Us" accentColor="blue" />
-
-					<div class="space-y-6">
-						<h3
-							class="text-3xl font-bold leading-tight font-sans pl-2"
+						{/* 1. Hero Section */}
+						<section
+							id="top"
+							class="relative w-full aspect-[4/5] lg:aspect-[16/10] overflow-hidden border-b border-subtle bg-surface"
 						>
-							静寂と重低音が交差する、<br />
-							一夜限りの聖域。
-						</h3>
-					</div>
-					<div
-						class="space-y-6 text-base text-text-muted leading-relaxed text-justify font-sans pl-2"
-					>
-						<p>
-							"<span class="font-en">THE FIRST TAKE</span
-							>"のような研ぎ澄まされた緊張感と、クラブカルチャーの熱狂を融合させた新たな空間。
-						</p>
-						<p>
-							無駄な装飾を削ぎ落とし、音楽と、そこに集う獣たちの息遣いだけを感じるラウンジフロアへようこそ。
-						</p>
-					</div>
-				</section>
-
-				{/* 3. Events */}
-				<section id="events" class="space-y-12">
-					<SectionHeader
-						title="Information"
-						accentColor="yellow"
-						link={{ href: "/events", label: "VIEW ALL →" }}
-					/>
-
-					<div class="space-y-16">
-						{/* Latest */}
-						<div class="space-y-4">
-							<p
-								class="text-sm text-accent-yellow font-bold tracking-widest font-en pl-1"
-							>
-								● NEXT EVENT
-							</p>
-							<HeroCard
-								title={nextEvent.title}
-								subTitle={nextEvent.subTitle}
-								date={nextEvent.date}
-								time={nextEvent.time}
-								place={nextEvent.place}
-								price={nextEvent.price}
-								image={nextEvent.image}
-								href={nextEvent.slug
-									? `/events/${nextEvent.slug}`
-									: "#"}
-							/>
-						</div>
-
-						{/* Archive */}
-						<div class="space-y-4">
-							<p
-								class="text-sm text-text-muted font-bold tracking-widest font-en pl-1"
-							>
-								● ARCHIVE
-							</p>
-							{/* GapをSP時は4 (16px) に狭める */}
+							{/* Mobile BG */}
 							<div
-								class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6"
-							>
-								{
-									pastEvents.map((event) => (
-										<ArchiveCard
-											title={event.title}
-											subTitle={event.subTitle}
-											date={event.date}
-											place={event.place}
-											image={event.image}
-											href={`/events/${event.slug}`}
+								class="lg:hidden absolute inset-0 bg-cover bg-center"
+								style={`background-image: url('${optimizedBgSrc}')`}
+							/>
+							<div class="lg:hidden absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+
+							<div class="absolute inset-0 p-8 md:p-12 lg:p-16 flex flex-col justify-end items-start">
+								<div class="w-full relative z-10">
+									{/* Title */}
+									<h2 class="flex flex-wrap items-baseline gap-x-4 text-5xl lg:text-6xl font-bold text-white tracking-tighter leading-none mb-6 drop-shadow-2xl lg:drop-shadow-none font-en">
+										<span>{nextEvent.title}</span>
+										<span class="text-3xl lg:text-4xl text-zinc-500 font-normal tracking-normal">
+											{nextEvent.subTitle}
+										</span>
+									</h2>
+
+									{/* Meta Info */}
+									<div class="flex flex-wrap items-center gap-x-5 gap-y-2 mb-8 text-sm font-bold text-white tracking-widest font-en">
+										<div class="flex items-center gap-3">
+											<Tag
+												variant={status.color as any}
+												class="font-en"
+											>
+												{status.label}
+											</Tag>
+											<span>{nextEvent.date}</span>
+										</div>
+										<div class="flex items-center gap-3 opacity-90">
+											<span class="hidden sm:block w-px h-3 bg-white/50" />
+											<span>{nextEvent.time}</span>
+											<span class="w-px h-3 bg-white/50" />
+											<span>
+												<span class="relative -top-[1px] inline-block">
+													@
+												</span>
+												{nextEvent.place}
+											</span>
+										</div>
+									</div>
+
+									<div class="w-full sm:w-auto min-w-[200px]">
+										<Button
+											variant="primary"
+											href={
+												nextEvent.slug
+													? `/events/${nextEvent.slug}`
+													: "#"
+											}
+										>
+											詳細・チケット予約
+										</Button>
+									</div>
+								</div>
+							</div>
+						</section>
+
+						{/* Inner Content */}
+						<div class="w-full px-8 md:px-12 py-24 space-y-32">
+							{/* 2. About */}
+							<section id="about" class="space-y-10">
+								<SectionHeader
+									title="About Us"
+									accentColor="blue"
+								/>
+
+								<div class="space-y-6">
+									<h3 class="text-3xl font-bold leading-tight font-sans pl-2">
+										静寂と重低音が交差する、
+										<br />
+										一夜限りの聖域。
+									</h3>
+								</div>
+								<div class="space-y-6 text-base text-text-muted leading-relaxed text-justify font-sans pl-2">
+									<p>
+										"
+										<span class="font-en">
+											THE FIRST TAKE
+										</span>
+										"のような研ぎ澄まされた緊張感と、クラブカルチャーの熱狂を融合させた新たな空間。
+									</p>
+									<p>
+										無駄な装飾を削ぎ落とし、音楽と、そこに集う獣たちの息遣いだけを感じるラウンジフロアへようこそ。
+									</p>
+								</div>
+							</section>
+
+							{/* 3. Events */}
+							<section id="events" class="space-y-12">
+								<SectionHeader
+									title="Information"
+									accentColor="yellow"
+									link={{
+										href: "/events",
+										label: "VIEW ALL →",
+									}}
+								/>
+
+								<div class="space-y-16">
+									{/* Latest */}
+									<div class="space-y-4">
+										<p class="text-sm text-accent-yellow font-bold tracking-widest font-en pl-1">
+											● NEXT EVENT
+										</p>
+										<HeroCard
+											title={nextEvent.title}
+											subTitle={nextEvent.subTitle}
+											date={nextEvent.date}
+											time={nextEvent.time}
+											place={nextEvent.place}
+											price={nextEvent.price}
+											image={nextEvent.image}
+											href={
+												nextEvent.slug
+													? `/events/${nextEvent.slug}`
+													: "#"
+											}
 										/>
-									))
-								}
-							</div>
+									</div>
+
+									{/* Archive */}
+									<div class="space-y-4">
+										<p class="text-sm text-text-muted font-bold tracking-widest font-en pl-1">
+											● ARCHIVE
+										</p>
+										<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+											{pastEvents.map((event) => (
+												<ArchiveCard
+													title={event.title}
+													subTitle={event.subTitle}
+													date={event.date}
+													place={event.place}
+													image={event.image}
+													href={`/events/${event.slug}`}
+												/>
+											))}
+										</div>
+									</div>
+								</div>
+							</section>
+
+							{/* 4. Social & VRC */}
+							<section id="social" class="space-y-10">
+								<SectionHeader
+									title="Join the Floor"
+									accentColor="red"
+								/>
+								{/* Social Buttons (Existing code) */}
+								<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									{/* ... (Content preserved but omitted for brevity in chat if unchanged) ... */}
+									{/* X */}
+									<a
+										href="#"
+										class="group bg-surface border border-subtle hover:border-accent-blue/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+									>
+										<div class="flex items-center gap-4">
+											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-blue/30">
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="20"
+													height="20"
+													viewBox="0 0 24 24"
+													fill="currentColor"
+												>
+													<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+												</svg>
+											</div>
+											<div>
+												<p class="text-base font-bold text-text-main font-en tracking-wide">
+													Official X
+												</p>
+												<p class="text-xs text-text-muted mt-0.5 font-en">
+													Latest Information
+												</p>
+											</div>
+										</div>
+										<span class="text-xs text-subtle group-hover:text-accent-blue transition-colors font-en">
+											VIEW →
+										</span>
+									</a>
+
+									{/* Instagram */}
+									<a
+										href="#"
+										class="group bg-surface border border-subtle hover:border-accent-red/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+									>
+										<div class="flex items-center gap-4">
+											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-red/30">
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="20"
+													height="20"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												>
+													<>
+														<rect
+															width="20"
+															height="20"
+															x="2"
+															y="2"
+															rx="5"
+															ry="5"
+														/>
+														<path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+														<line
+															x1="17.5"
+															x2="17.51"
+															y1="6.5"
+															y2="6.5"
+														/>
+													</>
+												</svg>
+											</div>
+											<div>
+												<p class="text-base font-bold text-text-main font-en tracking-wide">
+													Instagram
+												</p>
+												<p class="text-xs text-text-muted mt-0.5 font-en">
+													Photo Archive
+												</p>
+											</div>
+										</div>
+										<span class="text-xs text-subtle group-hover:text-accent-red transition-colors font-en">
+											VIEW →
+										</span>
+									</a>
+
+									{/* VRChat */}
+									<a
+										href="#"
+										class="sm:col-span-2 group bg-surface border border-subtle hover:border-accent-yellow/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+									>
+										<div class="flex items-center gap-4">
+											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-yellow/30">
+												<span class="font-bold text-xs font-en">
+													VRC
+												</span>
+											</div>
+											<div>
+												<p class="text-base font-bold text-text-main font-en tracking-wide">
+													VRChat Group
+												</p>
+												<p class="text-xs text-text-muted mt-0.5 font-en">
+													Join the virtual venue
+												</p>
+											</div>
+										</div>
+										<span class="text-xs text-subtle group-hover:text-accent-yellow transition-colors font-en">
+											JOIN →
+										</span>
+									</a>
+								</div>
+							</section>
+
+							<footer class="text-center pt-10 pb-20 border-t border-subtle">
+								<p class="text-[10px] text-text-muted/30 font-mono font-en">
+									© 2024 JUUTEION. All Rights Reserved.
+								</p>
+							</footer>
 						</div>
-					</div>
-				</section>
-
-				{/* 4. Social & VRC */}
-				<section id="social" class="space-y-10">
-					<SectionHeader title="Join the Floor" accentColor="red" />
-
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						{/* X */}
-						<a
-							href="#"
-							class="group bg-surface border border-subtle hover:border-accent-blue/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
-						>
-							<div class="flex items-center gap-4">
-								<div
-									class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-blue/30"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-										><path
-											d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-										></path></svg
-									>
-								</div>
-								<div>
-									<p
-										class="text-base font-bold text-text-main font-en tracking-wide"
-									>
-										Official X
-									</p>
-									<p
-										class="text-xs text-text-muted mt-0.5 font-en"
-									>
-										Latest Information
-									</p>
-								</div>
-							</div>
-							<span
-								class="text-xs text-subtle group-hover:text-accent-blue transition-colors font-en"
-								>VIEW →</span
-							>
-						</a>
-
-						{/* Instagram */}
-						<a
-							href="#"
-							class="group bg-surface border border-subtle hover:border-accent-red/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
-						>
-							<div class="flex items-center gap-4">
-								<div
-									class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-red/30"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										><rect
-											width="20"
-											height="20"
-											x="2"
-											y="2"
-											rx="5"
-											ry="5"></rect><path
-											d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
-										></path><line
-											x1="17.5"
-											x2="17.51"
-											y1="6.5"
-											y2="6.5"></line></svg
-									>
-								</div>
-								<div>
-									<p
-										class="text-base font-bold text-text-main font-en tracking-wide"
-									>
-										Instagram
-									</p>
-									<p
-										class="text-xs text-text-muted mt-0.5 font-en"
-									>
-										Photo Archive
-									</p>
-								</div>
-							</div>
-							<span
-								class="text-xs text-subtle group-hover:text-accent-red transition-colors font-en"
-								>VIEW →</span
-							>
-						</a>
-
-						{/* VRChat (Yellow Accent) */}
-						<a
-							href="#"
-							class="sm:col-span-2 group bg-surface border border-subtle hover:border-accent-yellow/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
-						>
-							<div class="flex items-center gap-4">
-								<div
-									class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-yellow/30"
-								>
-									<span class="font-bold text-xs font-en"
-										>VRC</span
-									>
-								</div>
-								<div>
-									<p
-										class="text-base font-bold text-text-main font-en tracking-wide"
-									>
-										VRChat Group
-									</p>
-									<p
-										class="text-xs text-text-muted mt-0.5 font-en"
-									>
-										Join the virtual venue
-									</p>
-								</div>
-							</div>
-							<span
-								class="text-xs text-subtle group-hover:text-accent-yellow transition-colors font-en"
-								>JOIN →</span
-							>
-						</a>
-					</div>
-				</section>
-
-				<footer class="text-center pt-10 pb-20 border-t border-subtle">
-					<p class="text-[10px] text-text-muted/30 font-mono font-en">
-						© 2024 JUUTEION. All Rights Reserved.
-					</p>
-				</footer>
-			</div>
-		</main>
-	</div>
+					</main>
+				</div>
+			</>
+		)
+	}
 </Layout>

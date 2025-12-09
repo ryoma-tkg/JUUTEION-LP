@@ -4,6 +4,8 @@ import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
+// 画像最適化用
+import { Image } from "astro:assets";
 // ロゴをインポート
 import logo from "../../assets/logo/jto_logo.svg";
 
@@ -130,10 +132,12 @@ const status = getEventStatus(entry);
             <div
                 class="relative w-full bg-zinc-900 group border-b border-subtle overflow-hidden"
             >
-                <img
+                {/* <Image /> コンポーネントを使用し最適化 */}
+                <Image
                     src={entry.data.image}
                     alt={entry.data.title}
                     class="w-full h-auto block"
+                    loading="eager"
                 />
 
                 {/* Black Fade Gradient */}
@@ -437,7 +441,7 @@ const status = getEventStatus(entry);
 
     .prose ul li {
         /* pl-5 (20px) -> pl-4 (16px) に変更して距離を詰める */
-        @apply pl-1 py-4 relative flex items-baseline;
+        @apply pl-4 py-4 relative flex items-baseline;
     }
 
     /* Vertical Line */
