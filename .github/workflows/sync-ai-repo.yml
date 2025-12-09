@@ -1,0 +1,75 @@
+name: Sync to AI Read Repo
+
+# 1. 「いつ」実行するか（トリガー）
+# dev-test ブランチに push された時だけ動きます
+on:
+  push:
+    branches:
+      - dev-test
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # 手順A: 開発用リポジトリ（ソース）を取得
+      - name: Checkout Source (dev-test)
+        uses: actions/checkout@v4
+        with:
+          path: source-repo
+
+      # 手順B: AI用リポジトリ（コピー先）を取得
+      - name: Checkout Target (AI Repo)
+        uses: actions/checkout@v4
+        with:
+          # 【重要】ここに作成したAI用リポジトリ名を入れてください
+          repository: ryoma-tkg/juuteion-lp-ai-read 
+          token: ${{ secrets.API_TOKEN_GITHUB }}
+          path: target-repo
+          # コピー先のブランチが存在しない場合でも動くよう、ここではrefを指定しません
+
+      # 手順C: ファイルの選別とコピー
+      - name: Sync Files
+        run: |
+          # コピー先ディレクトリから、.gitフォルダ以外を一旦削除（クリーンにする）
+          find target-repo -maxdepth 1 -not -name '.git' -not -name '.' -not -name '..' -exec rm -rf {} +
+
+          # rsyncで必要なファイルだけを source-repo -> target-repo へ転送
+          # 順序重要: --includeで許可し、最後に --exclude='*' で他を全拒否します
+          rsync -av \
+            --include='src/***' \
+            --include='public/' \
+            --include='public/favicon.svg' \
+            --exclude='public/images/*' \
+            --exclude='public/fonts/*' \
+            --include='package.json' \
+            --include='astro.config.mjs' \
+            --include='tailwind.config.mjs' \
+            --include='tsconfig.json' \
+            --include='README.md' \
+            --include='roadmap.md' \
+            --exclude='*' \
+            ./source-repo/ ./target-repo/
+
+      # 手順D: コミットして、指定のブランチへPush
+      - name: Commit and Push to ai-chat branch
+        run: |
+          cd target-repo
+          
+          # Gitユーザー設定（Botとして振る舞う）
+          git config user.name "AI Sync Bot"
+          git config user.email "bot@example.com"
+
+          # 変更がある場合のみ実行
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "Sync from dev-test: ${{ github.event.head_commit.message }}"
+            
+            # 【重要】送り先のブランチを ai-chat に指定
+            # ブランチがなければ作成(-b)、あれば切り替え
+            git checkout -B ai-chat
+            
+            # 強制的にリモートの ai-chat ブランチへ送る
+            git push origin ai-chat
+          else
+            echo "No changes to sync."
+          fi
