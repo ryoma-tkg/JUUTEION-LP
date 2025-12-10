@@ -3,6 +3,7 @@ import "@fontsource/ibm-plex-sans-jp/400.css";
 import "@fontsource/ibm-plex-sans-jp/700.css";
 import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/700.css";
+import { ViewTransitions } from "astro:transitions";
 
 interface Props {
     title: string;
@@ -19,104 +20,104 @@ const { title } = Astro.props;
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="generator" content={Astro.generator} />
         <title>{title} | JUUTEION Admin</title>
+
+        <ViewTransitions />
     </head>
     <body
         class="bg-zinc-950 text-zinc-100 antialiased min-h-screen flex flex-col"
+    ></body>
+</html>
+<body class="bg-zinc-950 text-zinc-100 antialiased min-h-screen flex flex-col">
+    {/* Admin Header */}
+    <header
+        class="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex justify-between items-center"
     >
-        {/* Admin Header */}
-        <header
-            class="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex justify-between items-center"
-        >
-            <h1
-                class="font-en font-bold text-lg tracking-widest text-accent-blue"
+        <h1 class="font-en font-bold text-lg tracking-widest text-accent-blue">
+            JUUTEION <span class="text-white">ADMIN</span>
+        </h1>
+
+        <div id="user-info" class="hidden flex items-center gap-4">
+            <span id="user-email" class="text-sm text-zinc-400 font-mono"
+            ></span>
+
+            {/* ▼ 追加: サイト更新ボタン */}
+            <button
+                id="deploy-btn"
+                class="text-xs bg-accent-blue/10 text-accent-blue border border-accent-blue/30 px-3 py-1.5 rounded hover:bg-accent-blue/20 transition-colors flex items-center gap-2"
             >
-                JUUTEION <span class="text-white">ADMIN</span>
-            </h1>
-
-            <div id="user-info" class="hidden flex items-center gap-4">
-                <span id="user-email" class="text-sm text-zinc-400 font-mono"
+                <span class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"
                 ></span>
+                PUBLISH SITE
+            </button>
 
-                {/* ▼ 追加: サイト更新ボタン */}
-                <button
-                    id="deploy-btn"
-                    class="text-xs bg-accent-blue/10 text-accent-blue border border-accent-blue/30 px-3 py-1.5 rounded hover:bg-accent-blue/20 transition-colors flex items-center gap-2"
-                >
-                    <span
-                        class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"
-                    ></span>
-                    PUBLISH SITE
-                </button>
+            <div class="h-4 w-px bg-zinc-700 mx-2"></div>
 
-                <div class="h-4 w-px bg-zinc-700 mx-2"></div>
+            <button
+                id="logout-btn"
+                class="text-xs border border-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-800 transition-colors"
+            >
+                LOGOUT
+            </button>
+        </div>
+    </header>
 
-                <button
-                    id="logout-btn"
-                    class="text-xs border border-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-800 transition-colors"
-                >
-                    LOGOUT
-                </button>
-            </div>
-        </header>
+    <main class="flex-1 p-6 overflow-auto">
+        <slot />
+    </main>
 
-        <main class="flex-1 p-6 overflow-auto">
-            <slot />
-        </main>
+    <script>
+        import { auth } from "../lib/firebase/client";
+        import { onAuthStateChanged, signOut } from "firebase/auth";
 
-        <script>
-            import { auth } from "../lib/firebase/client";
-            import { onAuthStateChanged, signOut } from "firebase/auth";
+        const userEmailSpan = document.getElementById("user-email");
+        const userInfoDiv = document.getElementById("user-info");
+        const logoutBtn = document.getElementById("logout-btn");
+        const deployBtn = document.getElementById("deploy-btn");
 
-            const userEmailSpan = document.getElementById("user-email");
-            const userInfoDiv = document.getElementById("user-info");
-            const logoutBtn = document.getElementById("logout-btn");
-            const deployBtn = document.getElementById("deploy-btn");
+        // 環境変数からGitHub情報を取得
+        const GITHUB_TOKEN = import.meta.env.PUBLIC_GITHUB_TOKEN;
+        const GITHUB_REPO = import.meta.env.PUBLIC_GITHUB_REPO; // 例: "username/repo"
 
-            // 環境変数からGitHub情報を取得
-            const GITHUB_TOKEN = import.meta.env.PUBLIC_GITHUB_TOKEN;
-            const GITHUB_REPO = import.meta.env.PUBLIC_GITHUB_REPO; // 例: "username/repo"
+        const ALLOWED_EMAILS = [
+            "takagi.buckup@gmail.com",
+            "juuteion.events@gmail.com",
+        ];
 
-            const ALLOWED_EMAILS = [
-                "takagi.buckup@gmail.com",
-                "juuteion.events@gmail.com",
-            ];
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                const currentPath = window.location.pathname;
 
-            if (auth) {
-                onAuthStateChanged(auth, (user) => {
-                    const currentPath = window.location.pathname;
-
-                    if (user) {
-                        // ログイン中
-                        if (!ALLOWED_EMAILS.includes(user.email || "")) {
-                            alert("アクセス権限がありません。");
-                            if (auth) signOut(auth); // authがあることを確認
-                            return;
-                        }
-
-                        // ユーザー情報表示
-                        if (userEmailSpan)
-                            userEmailSpan.innerText = user.email || "";
-                        if (userInfoDiv) userInfoDiv.classList.remove("hidden");
-
-                        // ログインページにいる場合はダッシュボードへ
-                        if (currentPath === "/admin/login") {
-                            window.location.href = "/admin";
-                        }
-                    } else {
-                        // 未ログイン
-                        if (currentPath !== "/admin/login") {
-                            window.location.href = "/admin/login";
-                        }
+                if (user) {
+                    // ログイン中
+                    if (!ALLOWED_EMAILS.includes(user.email || "")) {
+                        alert("アクセス権限がありません。");
+                        if (auth) signOut(auth); // authがあることを確認
+                        return;
                     }
-                });
 
-                logoutBtn?.addEventListener("click", async () => {
-                    if (auth) {
-                        await signOut(auth);
+                    // ユーザー情報表示
+                    if (userEmailSpan)
+                        userEmailSpan.innerText = user.email || "";
+                    if (userInfoDiv) userInfoDiv.classList.remove("hidden");
+
+                    // ログインページにいる場合はダッシュボードへ
+                    if (currentPath === "/admin/login") {
+                        window.location.href = "/admin";
+                    }
+                } else {
+                    // 未ログイン
+                    if (currentPath !== "/admin/login") {
                         window.location.href = "/admin/login";
                     }
-                });
-            }
-        </script>
-    </body>
-</html>
+                }
+            });
+
+            logoutBtn?.addEventListener("click", async () => {
+                if (auth) {
+                    await signOut(auth);
+                    window.location.href = "/admin/login";
+                }
+            });
+        }
+    </script>
+</body>
