@@ -11,6 +11,9 @@ const firebaseConfig = {
     messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
 };
+if (typeof window !== "undefined") {
+    console.log("🔥 Firebase Config Check:", firebaseConfig);
+}
 
 // 二重初期化を防ぐためのチェック
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
