@@ -15,12 +15,12 @@ const firebaseConfig = {
 // 二重初期化を防ぐためのチェック
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// FirestoreとStorageはビルド時(SSG)にも使うためそのままエクスポート
+// FirestoreとStorageは常にエクスポート (SSGビルドで使用するため)
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// ▼ 修正: Authは「ブラウザ環境」でのみ初期化する
-// これにより、GitHub Actionsでのビルド時(Node.js環境)にエラーが出るのを防ぎます
+// ▼ 修正: Authは「ブラウザ環境 (windowがある時)」でのみ初期化する
+// これにより、GitHub Actions等のビルド環境(Node.js)でAPIキーエラーが出るのを防ぎます
 export const auth: Auth | null = (typeof window !== "undefined")
     ? getAuth(app)
     : null;
