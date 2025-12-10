@@ -16,7 +16,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
             <button
                 id="google-login-btn"
-                class="flex w-full items-center justify-center gap-3 rounded-xl bg-white py-3.5 px-4 font-bold text-black transition-colors hover:bg-zinc-200"
+                class="flex w-full items-center justify-center gap-3 rounded-xl bg-white py-3.5 px-4 font-bold text-black transition-colors hover:bg-zinc-200 cursor-pointer"
             >
                 <svg width="20" height="20" viewBox="0 0 24 24">
                     <path
@@ -33,24 +33,39 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         import { auth } from "../../lib/firebase/client";
         import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-        const btn = document.getElementById("google-login-btn");
+        // ▼ View Transitions対応: ページロード時に実行
+        document.addEventListener("astro:page-load", () => {
+            const btn = document.getElementById("google-login-btn");
+            if (!btn) return;
 
-        btn?.addEventListener("click", async () => {
-            // ▼ 修正: auth が null の場合は処理を中断 (通常あり得ないがビルド対策)
-            if (!auth) {
-                console.error("Firebase Auth is not initialized.");
-                alert("ログイン機能が利用できません。");
-                return;
-            }
+            btn.addEventListener("click", async () => {
+                // authチェック: ビルドエラー回避等でnullになっている場合の対策
+                if (!auth) {
+                    console.error(
+                        "Firebase Auth is not initialized. Check your API Keys.",
+                    );
+                    alert(
+                        "ログイン機能が利用できません（システムエラー: Auth未初期化）。",
+                    );
+                    return;
+                }
 
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-                // 成功時は AdminLayout の onAuthStateChanged が検知してリダイレクトする
-            } catch (error) {
-                console.error(error);
-                alert("ログインに失敗しました。");
-            }
+                // ローディング表示（簡易的）
+                const originalText = btn.innerHTML;
+                btn.innerHTML = "Signing in...";
+                btn.style.pointerEvents = "none";
+
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                    // 成功すると AdminLayout の onAuthStateChanged が検知してリダイレクトします
+                } catch (error: any) {
+                    console.error(error);
+                    alert("ログインに失敗しました: " + error.message);
+                    btn.innerHTML = originalText;
+                    btn.style.pointerEvents = "auto";
+                }
+            });
         });
     </script>
 </AdminLayout>
