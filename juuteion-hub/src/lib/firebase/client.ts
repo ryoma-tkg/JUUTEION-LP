@@ -12,15 +12,15 @@ const firebaseConfig = {
     appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
 };
 
-// ▼ 修正: Appは常に初期化する（SSGビルドでFirestoreが必要なため）
+// 二重初期化を防ぐためのチェック
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// FirestoreとStorageは常にエクスポート
+// FirestoreとStorageはビルド時(SSG)にも使うためそのままエクスポート
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// ▼ 修正: Authだけは「ブラウザ環境」のみで初期化する
-// これにより、ビルド時(Node.js)の "auth/invalid-api-key" エラーを回避します
+// ▼ 修正: Authは「ブラウザ環境」でのみ初期化する
+// これにより、GitHub Actionsでのビルド時(Node.js環境)にエラーが出るのを防ぎます
 export const auth: Auth | null = (typeof window !== "undefined")
     ? getAuth(app)
     : null;

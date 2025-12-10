@@ -38,7 +38,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         btn?.addEventListener("click", async () => {
             // ▼ 修正: auth が null の場合は処理を中断 (通常あり得ないがビルド対策)
             if (!auth) {
-                console.error("Firebase Auth not initialized");
+                console.error("Firebase Auth is not initialized.");
+                alert("ログイン機能が利用できません。");
                 return;
             }
 

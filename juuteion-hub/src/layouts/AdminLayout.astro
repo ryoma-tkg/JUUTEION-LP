@@ -86,21 +86,24 @@ const { title } = Astro.props;
                     const currentPath = window.location.pathname;
 
                     if (user) {
+                        // ログイン中
                         if (!ALLOWED_EMAILS.includes(user.email || "")) {
                             alert("アクセス権限がありません。");
-                            // authがnullでないことは確認済みだが、念のため型ガード的に渡すかauth!を使う
-                            if (auth) signOut(auth);
+                            if (auth) signOut(auth); // authがあることを確認
                             return;
                         }
 
+                        // ユーザー情報表示
                         if (userEmailSpan)
                             userEmailSpan.innerText = user.email || "";
                         if (userInfoDiv) userInfoDiv.classList.remove("hidden");
 
+                        // ログインページにいる場合はダッシュボードへ
                         if (currentPath === "/admin/login") {
                             window.location.href = "/admin";
                         }
                     } else {
+                        // 未ログイン
                         if (currentPath !== "/admin/login") {
                             window.location.href = "/admin/login";
                         }
@@ -113,8 +116,6 @@ const { title } = Astro.props;
                         window.location.href = "/admin/login";
                     }
                 });
-
-                // ... (deployBtn の処理は変更なし) ...
             }
         </script>
     </body>
