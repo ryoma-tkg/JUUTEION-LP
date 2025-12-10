@@ -12,20 +12,15 @@ const firebaseConfig = {
     appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
 };
 
-// 二重初期化を防ぐためのチェック
-// apiKeyが存在しない場合（環境変数がロードされていない場合）は初期化しない
-const app = (!getApps().length && firebaseConfig.apiKey)
-    ? initializeApp(firebaseConfig)
-    : (getApps().length ? getApp() : null);
+// ▼ 修正: Appは常に初期化する（SSGビルドでFirestoreが必要なため）
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// アプリが初期化されていない場合はダミーを返すかnullを扱う設計にするが、
-// Firestoreなどは初期化必須のため、アプリがない場合はエラーになる可能性があります。
-// ただし、Authエラーだけを回避するなら以下のようにします。
+// FirestoreとStorageは常にエクスポート
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
-export const db = app ? getFirestore(app) : {} as any;
-export const storage = app ? getStorage(app) : {} as any;
-
-// ▼ 修正: APIキーがあり、かつブラウザ環境の場合のみ Auth を初期化
-export const auth: Auth | null = (typeof window !== "undefined" && app && firebaseConfig.apiKey)
+// ▼ 修正: Authだけは「ブラウザ環境」のみで初期化する
+// これにより、ビルド時(Node.js)の "auth/invalid-api-key" エラーを回避します
+export const auth: Auth | null = (typeof window !== "undefined")
     ? getAuth(app)
     : null;
