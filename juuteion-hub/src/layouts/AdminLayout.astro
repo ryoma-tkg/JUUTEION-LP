@@ -3,7 +3,9 @@ import "@fontsource/ibm-plex-sans-jp/400.css";
 import "@fontsource/ibm-plex-sans-jp/700.css";
 import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/700.css";
-import { ViewTransitions } from "astro:transitions";
+
+// ▼ 修正: ClientRouter に変更
+import { ClientRouter } from "astro:transitions";
 
 interface Props {
     title: string;
@@ -21,7 +23,7 @@ const { title } = Astro.props;
         <meta name="generator" content={Astro.generator} />
         <title>{title} | JUUTEION Admin</title>
 
-        <ViewTransitions />
+        <ClientRouter />
     </head>
     <body
         class="bg-zinc-950 text-zinc-100 antialiased min-h-screen flex flex-col"
