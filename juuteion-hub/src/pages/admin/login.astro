@@ -36,6 +36,12 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         const btn = document.getElementById("google-login-btn");
 
         btn?.addEventListener("click", async () => {
+            // ▼ 修正: auth が null の場合は処理を中断 (通常あり得ないがビルド対策)
+            if (!auth) {
+                console.error("Firebase Auth not initialized");
+                return;
+            }
+
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);

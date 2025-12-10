@@ -1,8 +1,7 @@
-
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAuth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth"; // type Auth を追加
 
 const firebaseConfig = {
     apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
@@ -18,4 +17,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const auth = getAuth(app);
+
+// ▼ 修正: Authの初期化をブラウザ環境でのみ実行し、サーバー(ビルド)環境ではnullを返す
+// これにより、GitHub Actionsでのビルド時に API Key エラーが出るのを防ぎます
+export const auth: Auth | null = typeof window !== "undefined" ? getAuth(app) : null;
