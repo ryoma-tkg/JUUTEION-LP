@@ -1,7 +1,8 @@
-
 # JUUTEION Development Roadmap
 
 This document outlines the step-by-step plan to transition from the current static prototype to a fully dynamic, CMS-driven event hub.
+
+**Status:** 🚀 **PROJECT COMPLETED** (Ready for Operation)
 
 ## Phase 1: Content Management System (CMS) Construction
 **Goal:** Establish a mechanism where adding Markdown files automatically updates the site content.
@@ -85,22 +86,34 @@ This document outlines the step-by-step plan to transition from the current stat
   - Initialize **Firebase Storage** (Image hosting).
   - Set strict security rules (Read: Public, Write: Auth only).
 
-- [ ] **6.3 Admin Dashboard (SPA)**
-  - [x] Create a client-side admin area (e.g., `/admin` or separate route).
+- [x] **6.3 Admin Dashboard (SPA)**
+  - [x] Create a client-side admin area (`/admin`).
   - [x] Implement **Firebase Authentication** (Google Sign-In) to restrict access to the owner.
-  - [ ] Build UI for Event CRUD (Create, Read, Update, Delete) connecting directly to Firestore. *(Current Blocker: Build Error in new.astro)*
+  - [x] Build UI for Event CRUD (Create, Read, Update, Delete) connecting directly to Firestore.
+  - [x] Implement **TwiPla Reservation Link** & Deadline management.
 
-- [ ] **6.4 Advanced Image Uploader**
-  - Implement **Client-Side Compression**:
+- [x] **6.4 Advanced Image Uploader**
+  - [x] Implement **Client-Side Compression**:
     - Resize and convert images to WebP *in the browser* before uploading.
     - Limit file size to save Storage costs and bandwidth.
-  - Upload to Firebase Storage and retrieve download URLs.
+  - [x] Upload to Firebase Storage and retrieve download URLs.
 
-- [ ] **6.5 Build-Time Data Fetching**
-  - Modify `src/content/config.ts` (or create a data loader) to fetch events from **Firestore** instead of Markdown files during `npm run build`.
-  - Ensure the site remains SSG (Static Site Generation).
+- [x] **6.5 Build-Time Data Fetching**
+  - [x] Modify `src/pages/index.astro` and `src/pages/events/[id].astro` to fetch events from **Firestore** during `npm run build`.
+  - [x] Ensure the site remains SSG (Static Site Generation).
 
-- [ ] **6.6 Automated Deployment Pipeline**
-  - Create a "Publish" button in the Admin Dashboard.
-  - Trigger a **GitHub Actions Repository Dispatch** event upon publishing.
-  - This action will re-build and re-deploy the static site with the latest data from Firestore.
+- [x] **6.6 Automated Deployment Pipeline**
+  - [x] Create a "PUBLISH SITE" button in the Admin Dashboard.
+  - [x] Trigger a **GitHub Actions Repository Dispatch** event upon publishing.
+  - [x] Configure workflow (`publish.yml`) to re-build and re-deploy the static site with the latest data from Firestore.
+  - [x] Setup CI/CD pipeline: `dev-test` push -> Test Build -> Auto-merge to `main` -> Production Deploy.
+
+---
+
+## 🏁 Final Project State
+The project has successfully transitioned to a **Serverless Headless CMS Architecture**.
+
+* **Frontend**: Astro (SSG) hosted on Firebase Hosting.
+* **Backend**: Firebase (Firestore, Storage, Auth).
+* **Admin**: Client-side SPA embedded in `/admin`.
+* **Deployment**: Fully automated via GitHub Actions triggered from the Admin Dashboard.
