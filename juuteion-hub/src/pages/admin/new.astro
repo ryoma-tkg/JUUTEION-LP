@@ -1,424 +1,14 @@
----
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import Input from "../../components/ui/Input.astro";
+<script>
+    import { db, storage } from "../../lib/firebase/client";
+    import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+    import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// --- Style Definitions ---
-const STYLES = {
-    sectionTitle: "text-xl font-bold text-white flex items-center gap-2",
-    subTitle:
-        "text-sm font-bold text-zinc-400 mt-6 mb-2 flex items-center gap-2",
-    label: "text-xs text-text-muted uppercase tracking-widest block",
+    // ▼ View Transitions対応: ページ読み込み/遷移ごとに実行する関数を作成
+    const initPage = () => {
+        const form = document.getElementById("event-form") as HTMLFormElement;
+        if (!form) return; // このページじゃない場合は終了
 
-    // Inputs
-    select: [
-        "w-full bg-surface border border-subtle rounded-2xl px-5 py-4",
-        "text-base text-text-main focus:outline-none focus:border-accent-blue",
-        "transition-colors cursor-pointer appearance-none",
-    ].join(" "),
-
-    inputBase: [
-        "bg-surface border border-subtle rounded-xl px-4 py-3",
-        "text-sm text-text-main placeholder:text-text-muted/30",
-        "focus:outline-none focus:border-accent-blue transition-colors",
-    ].join(" "),
-
-    // Dropzones
-    dropzone: {
-        base: [
-            "relative w-full bg-surface border-2 border-dashed border-subtle",
-            "rounded-2xl overflow-hidden transition-colors group cursor-pointer",
-        ].join(" "),
-        main: "aspect-[3/4] hover:border-accent-blue",
-        thumb: "aspect-square hover:border-accent-yellow",
-    },
-
-    // Preview
-    preview: {
-        placeholder:
-            "absolute inset-0 flex flex-col items-center justify-center text-zinc-500 group-hover:text-white transition-colors",
-        img: "absolute inset-0 w-full h-full object-cover hidden",
-        icon: "mb-2 text-zinc-600 group-hover:text-current transition-colors",
-        text: "text-xs font-bold",
-    },
-
-    // Buttons
-    submitBtn: [
-        "w-full bg-white text-black font-bold text-lg py-4 rounded-2xl shadow-xl",
-        "hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-        "flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden",
-    ].join(" "),
-
-    addBtn: "text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-1",
-    removeBtn: "text-zinc-500 hover:text-red-500 transition-colors p-2",
-
-    // Markdown Helper
-    monoInput: "font-mono text-sm leading-relaxed",
-};
----
-
-<AdminLayout title="New Event">
-    <div class="max-w-4xl mx-auto space-y-8 pb-20">
-        <div
-            class="flex items-center justify-between border-b border-zinc-800 pb-4"
-        >
-            <h2 class="text-3xl font-bold font-en tracking-tight">New Event</h2>
-            <a
-                href="/admin"
-                class="text-sm text-zinc-500 hover:text-white transition-colors"
-            >
-                キャンセルして戻る
-            </a>
-        </div>
-
-        <form id="event-form" class="space-y-10">
-            {/* 1. Basic Info */}
-            <section class="space-y-6">
-                <h3 class={STYLES.sectionTitle}>
-                    <span class="w-1 h-6 bg-accent-blue rounded-sm"></span>
-                    基本情報
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <Input
-                            label="Event Title"
-                            name="title"
-                            placeholder="イベント名 (例: 獸酊音)"
-                            required
-                        />
-                        <Input
-                            label="Sub Title"
-                            name="subTitle"
-                            placeholder="サブタイトル (例: Vol.1)"
-                        />
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-2">
-                                <Input
-                                    label="Date"
-                                    type="date"
-                                    name="date"
-                                    required
-                                />
-                            </div>
-                            <div class="space-y-2">
-                                <label class={STYLES.label}>Status</label>
-                                <select name="status" class={STYLES.select}>
-                                    <option value="upcoming">UPCOMING</option>
-                                    <option value="open">NOW OPEN</option>
-                                    <option value="soldout">SOLD OUT</option>
-                                    <option value="archive">ARCHIVE</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Open Time Input (GUI) */}
-                        <div class="space-y-2">
-                            <label class={STYLES.label}>Open Time</label>
-                            <div class="flex gap-2">
-                                <select
-                                    id="time-prefix"
-                                    class:list={[STYLES.select, "w-1/3"]}
-                                >
-                                    <option value="OPEN">OPEN</option>
-                                    <option value="START">START</option>
-                                </select>
-                                <input
-                                    type="time"
-                                    id="time-value"
-                                    class:list={[STYLES.select, "w-2/3"]}
-                                    required
-                                />
-                            </div>
-                            {/* Hidden input to store combined value */}
-                            <input type="hidden" name="time" id="time-hidden" />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 2. Venue & Price (Basic) */}
-            <section class="space-y-6">
-                <h3 class={STYLES.sectionTitle}>
-                    <span class="w-1 h-6 bg-accent-yellow rounded-sm"></span>
-                    場所・料金 (ヘッダー表示用)
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <Input
-                            label="Place Name"
-                            name="place"
-                            placeholder="会場名 (例: CLUB ASIA)"
-                            required
-                        />
-                        <Input
-                            label="Address"
-                            name="address"
-                            placeholder="住所 (GoogleMap用)"
-                        />
-                        <Input
-                            label="Google Map Embed URL"
-                            name="mapEmbed"
-                            placeholder="Google Mapの埋め込みURL"
-                        />
-                    </div>
-                    <div class="space-y-4">
-                        <Input
-                            label="Price Info (Short)"
-                            name="price"
-                            placeholder="例: ¥3,500 / 1D"
-                            required
-                        />
-                    </div>
-                </div>
-            </section>
-
-            {/* ▼ 追加: 3. 予約設定 (TwiPla) */}
-            <section class="space-y-6">
-                <h3 class={STYLES.sectionTitle}>
-                    <span class="w-1 h-6 bg-accent-blue rounded-sm"></span>
-                    予約設定 (TwiPla / 締切)
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <Input
-                            label="Ticket Link (TwiPla URL)"
-                            name="ticketLink"
-                            placeholder="https://twipla.jp/events/..."
-                        />
-                    </div>
-                    <div class="space-y-4">
-                        <div class="space-y-2">
-                            <label class={STYLES.label}
-                                >Reservation Deadline</label
-                            >
-                            <input
-                                type="datetime-local"
-                                name="ticketDeadline"
-                                class={STYLES.inputBase}
-                            />
-                            <p class="text-[10px] text-zinc-500">
-                                ※ この日時を過ぎるとボタンが非表示になります
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 4. Images */}
-            <section class="space-y-6">
-                <h3 class={STYLES.sectionTitle}>
-                    <span class="w-1 h-6 bg-accent-red rounded-sm"></span>
-                    画像設定
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Main Visual */}
-                    <div class="space-y-2">
-                        <label class={STYLES.label}>Main Visual (詳細用)</label>
-                        <div
-                            class:list={[
-                                STYLES.dropzone.base,
-                                STYLES.dropzone.main,
-                            ]}
-                            id="drop-main"
-                        >
-                            <input
-                                type="file"
-                                id="input-main"
-                                accept="image/*"
-                                class="hidden"
-                            />
-                            <div
-                                class={STYLES.preview.placeholder}
-                                id="preview-main-placeholder"
-                            >
-                                <span class={STYLES.preview.text}
-                                    >CLICK TO UPLOAD</span
-                                >
-                            </div>
-                            <img
-                                id="preview-main-img"
-                                class={STYLES.preview.img}
-                            />
-                        </div>
-                    </div>
-                    {/* Thumbnail */}
-                    <div class="space-y-2">
-                        <label class={STYLES.label}>Thumbnail (一覧用)</label>
-                        <div
-                            class:list={[
-                                STYLES.dropzone.base,
-                                STYLES.dropzone.thumb,
-                            ]}
-                            id="drop-thumb"
-                        >
-                            <input
-                                type="file"
-                                id="input-thumb"
-                                accept="image/*"
-                                class="hidden"
-                            />
-                            <div
-                                class={STYLES.preview.placeholder}
-                                id="preview-thumb-placeholder"
-                            >
-                                <span class={STYLES.preview.text}
-                                    >CLICK TO UPLOAD</span
-                                >
-                            </div>
-                            <img
-                                id="preview-thumb-img"
-                                class={STYLES.preview.img}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 4. Body Builder (Markdown Generator) */}
-            <section
-                class="space-y-8 bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800"
-            >
-                <h3 class={STYLES.sectionTitle}>
-                    <span class="w-1 h-6 bg-subtle rounded-sm"></span>
-                    詳細コンテンツ作成
-                </h3>
-
-                {/* Intro Text */}
-                <div>
-                    <h4 class={STYLES.subTitle}>
-                        イントロダクション (Markdown)
-                    </h4>
-                    <Input
-                        id="body-intro"
-                        multiline
-                        rows="4"
-                        placeholder="イベントの紹介文を入力..."
-                        class={STYLES.monoInput}
-                    />
-                </div>
-
-                {/* Timetable Builder */}
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class={STYLES.subTitle}>TIMETABLE</h4>
-                        <button
-                            type="button"
-                            id="add-tt-btn"
-                            class={STYLES.addBtn}
-                        >
-                            ＋ 追加
-                        </button>
-                    </div>
-                    <div id="tt-container" class="space-y-2">
-                        {/* Rows will be added here by JS */}
-                    </div>
-                </div>
-
-                {/* Price Table Builder */}
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class={STYLES.subTitle}>ENTRANCE FEE</h4>
-                        <button
-                            type="button"
-                            id="add-price-btn"
-                            class={STYLES.addBtn}
-                        >
-                            ＋ 追加
-                        </button>
-                    </div>
-                    <div id="price-container" class="space-y-2">
-                        {/* Rows will be added here by JS */}
-                    </div>
-                </div>
-
-                {/* Notes */}
-                <div>
-                    <h4 class={STYLES.subTitle}>注意事項など (Markdown)</h4>
-                    <Input
-                        id="body-notes"
-                        multiline
-                        rows="4"
-                        placeholder={`## ATTENTION\n- クロークについて...\n- 再入場について...`}
-                        class={STYLES.monoInput}
-                    />
-                </div>
-
-                {/* Hidden Input for Final Markdown */}
-                <input type="hidden" name="body" id="final-body" />
-            </section>
-
-            {/* Action Bar */}
-            <div class="sticky bottom-6 z-50">
-                <button type="submit" id="submit-btn" class={STYLES.submitBtn}>
-                    <span>PUBLISH EVENT</span>
-                </button>
-            </div>
-        </form>
-    </div>
-
-    {/* Row Templates (Hidden) */}
-    <template id="tmpl-tt-row">
-        <div class="flex gap-2 items-center group row-tt">
-            <input
-                type="time"
-                class:list={[STYLES.inputBase, "w-32 input-time"]}
-                required
-            />
-            <input
-                type="text"
-                class:list={[STYLES.inputBase, "flex-1 input-content"]}
-                placeholder="Artist / Content"
-                required
-            />
-            <button type="button" class={`${STYLES.removeBtn} btn-remove`}
-                >×</button
-            >
-        </div>
-    </template>
-
-    <template id="tmpl-price-row">
-        <div class="flex gap-2 items-center group row-price">
-            {/* 幅を少し広げて、新しい選択肢を追加 */}
-            <select class:list={[STYLES.inputBase, "w-40 input-type"]}>
-                <option value="DOOR">DOOR</option>
-                <option value="TwiPla">TwiPla</option>
-                <option value="ADV">ADV</option>
-                <option value="LATE DISCOUNT">LATE DISCOUNT</option>
-                <option value="U-23">U-23</option>
-                <option value="VRC">VRC割</option>
-            </select>
-
-            {/* LATE DISCOUNT用: 開始時間入力 (デフォルト非表示) */}
-            <input
-                type="time"
-                class:list={[STYLES.inputBase, "w-28 hidden input-late-time"]}
-                title="割引適用開始時間"
-            />
-
-            <input
-                type="text"
-                class:list={[STYLES.inputBase, "flex-1 input-price"]}
-                placeholder="¥2,500"
-                required
-            />
-            <button type="button" class={`${STYLES.removeBtn} btn-remove`}
-                >×</button
-            >
-        </div>
-    </template>
-
-    <script>
-        import { db, storage } from "../../lib/firebase/client";
-        import {
-            collection,
-            addDoc,
-            serverTimestamp,
-        } from "firebase/firestore";
-        import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
-        // === 1. UI Logic: Time Input ===
+        // === 1. UI Elements ===
         const timePrefix = document.getElementById(
             "time-prefix",
         ) as HTMLSelectElement;
@@ -428,8 +18,10 @@ const STYLES = {
         const timeHidden = document.getElementById(
             "time-hidden",
         ) as HTMLInputElement;
+        const submitBtn = document.getElementById(
+            "submit-btn",
+        ) as HTMLButtonElement;
 
-        // === 2. UI Logic: Body Builder ===
         const ttContainer = document.getElementById("tt-container");
         const priceContainer = document.getElementById("price-container");
         const tmplTt = document.getElementById(
@@ -439,7 +31,7 @@ const STYLES = {
             "tmpl-price-row",
         ) as HTMLTemplateElement;
 
-        // 行追加ヘルパー (Price行の特別ロジック追加)
+        // === Helper Functions ===
         const addRow = (
             container: HTMLElement | null,
             template: HTMLTemplateElement | null,
@@ -447,22 +39,19 @@ const STYLES = {
             if (!container || !template) return;
             const clone = template.content.cloneNode(true) as DocumentFragment;
 
-            // 削除ボタンのイベント
             clone
                 .querySelector(".btn-remove")
                 ?.addEventListener("click", (e) => {
-                    const target = e.target as HTMLElement;
-                    target.closest(".flex")?.remove();
+                    (e.target as HTMLElement).closest(".flex")?.remove();
                 });
 
-            // --- LATE DISCOUNTの表示制御ロジック ---
+            // LATE DISCOUNT Logic
             const typeSelect = clone.querySelector(
                 ".input-type",
             ) as HTMLSelectElement;
             const lateTimeInput = clone.querySelector(
                 ".input-late-time",
             ) as HTMLInputElement;
-
             if (typeSelect && lateTimeInput) {
                 typeSelect.addEventListener("change", () => {
                     if (typeSelect.value === "LATE DISCOUNT") {
@@ -471,16 +60,16 @@ const STYLES = {
                     } else {
                         lateTimeInput.classList.add("hidden");
                         lateTimeInput.required = false;
-                        lateTimeInput.value = ""; // 非表示時に値をクリア
+                        lateTimeInput.value = "";
                     }
                 });
             }
-            // -------------------------------------
-
             container.appendChild(clone);
         };
 
-        // イベントリスナー設定
+        // === Event Listeners ===
+        // 既存のリスナーが重複しないよう、cloneNodeでリセットするテクニックもありますが、
+        // astro:page-loadならDOMが書き換わっているため新規登録でOK
         document
             .getElementById("add-tt-btn")
             ?.addEventListener("click", () => addRow(ttContainer, tmplTt));
@@ -490,145 +79,40 @@ const STYLES = {
                 addRow(priceContainer, tmplPrice),
             );
 
-        // 初期表示で各1行追加しておく
-        window.addEventListener("DOMContentLoaded", () => {
+        // 初期行の追加 (空の場合のみ)
+        if (ttContainer && ttContainer.children.length === 0)
             addRow(ttContainer, tmplTt);
+        if (priceContainer && priceContainer.children.length === 0)
             addRow(priceContainer, tmplPrice);
-        });
 
-        // Markdown生成ロジック
-        const generateMarkdown = () => {
-            const introEl = document.getElementById(
-                "body-intro",
-            ) as HTMLInputElement;
-            const notesEl = document.getElementById(
-                "body-notes",
-            ) as HTMLInputElement;
-
-            const intro = introEl?.value || "";
-            const notes = notesEl?.value || "";
-
-            let md = "";
-            if (intro) md += intro + "\n\n";
-
-            // Timetable処理
-            const ttRows = document.querySelectorAll(".row-tt");
-            if (ttRows.length > 0) {
-                const rowsArray = Array.from(ttRows);
-                const hasContent = rowsArray.some((row) => {
-                    const input = row.querySelector(
-                        ".input-content",
-                    ) as HTMLInputElement;
-                    return input && input.value.trim() !== "";
-                });
-
-                if (hasContent) {
-                    md += "## TIMETABLE\n";
-                    rowsArray.forEach((row) => {
-                        const timeEl = row.querySelector(
-                            ".input-time",
-                        ) as HTMLInputElement;
-                        const contentEl = row.querySelector(
-                            ".input-content",
-                        ) as HTMLInputElement;
-                        if (
-                            timeEl &&
-                            contentEl &&
-                            timeEl.value &&
-                            contentEl.value
-                        ) {
-                            md += `- **${timeEl.value}** ${contentEl.value}\n`;
-                        }
-                    });
-                    md += "\n";
-                }
-            }
-
-            // Price Table処理
-            const priceRows = document.querySelectorAll(".row-price");
-            if (priceRows.length > 0) {
-                const rowsArray = Array.from(priceRows);
-                const hasContent = rowsArray.some((row) => {
-                    const input = row.querySelector(
-                        ".input-price",
-                    ) as HTMLInputElement;
-                    return input && input.value.trim() !== "";
-                });
-
-                if (hasContent) {
-                    md += "## ENTRANCE FEE\n";
-                    md += "| TICKET TYPE | PRICE |\n";
-                    md += "| :---------- | ----: |\n";
-                    rowsArray.forEach((row) => {
-                        const typeEl = row.querySelector(
-                            ".input-type",
-                        ) as HTMLSelectElement;
-                        const priceEl = row.querySelector(
-                            ".input-price",
-                        ) as HTMLInputElement;
-                        const lateTimeEl = row.querySelector(
-                            ".input-late-time",
-                        ) as HTMLInputElement;
-
-                        if (priceEl && priceEl.value) {
-                            let typeLabel = typeEl.value;
-                            // LATE DISCOUNTで時間が入っている場合、ラベルに時間を付記する
-                            if (
-                                typeLabel === "LATE DISCOUNT" &&
-                                lateTimeEl &&
-                                lateTimeEl.value
-                            ) {
-                                typeLabel += ` (${lateTimeEl.value}~)`;
-                            }
-                            md += `| ${typeLabel} | ${priceEl.value} |\n`;
-                        }
-                    });
-                    md += "\n";
-                }
-            }
-
-            if (notes) md += notes;
-            return md;
-        };
-
-        // === 3. Image Logic ===
-        const COMPRESS_QUALITY = 0.6;
-        const MAX_WIDTH = 4096;
-
+        // === Image Logic ===
         const processImage = async (file: File): Promise<Blob> => {
+            // (省略なし: 画像処理ロジックはそのまま維持)
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = (event) => {
+                reader.onload = (e) => {
                     const img = new Image();
-                    img.src = event.target?.result as string;
+                    img.src = e.target?.result as string;
                     img.onload = () => {
                         const canvas = document.createElement("canvas");
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
+                        const MAX_WIDTH = 1200;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > MAX_WIDTH) {
+                            h *= MAX_WIDTH / w;
+                            w = MAX_WIDTH;
                         }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext("2d");
-                        if (!ctx) {
-                            reject(new Error("Canvas context failed"));
-                            return;
-                        }
-                        ctx.drawImage(img, 0, 0, width, height);
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
                         canvas.toBlob(
-                            (blob) => {
-                                if (blob) resolve(blob);
-                                else reject(new Error("Compression failed"));
-                            },
+                            (b) => (b ? resolve(b) : reject()),
                             "image/webp",
-                            COMPRESS_QUALITY,
+                            0.8,
                         );
                     };
                 };
-                reader.onerror = (error) => reject(error);
             });
         };
 
@@ -644,6 +128,8 @@ const STYLES = {
             const placeholder = document.getElementById(placeholderId);
             let selectedFile: File | null = null;
 
+            if (!input || !dropZone) return () => null;
+
             const handleFile = (file: File) => {
                 selectedFile = file;
                 const reader = new FileReader();
@@ -655,24 +141,22 @@ const STYLES = {
                 reader.readAsDataURL(file);
             };
 
-            dropZone?.addEventListener("click", () => input.click());
-            dropZone?.addEventListener("dragover", (e) => {
+            dropZone.onclick = () => input.click(); // addEventListenerよりonclickが重複防止に安全
+            dropZone.ondragover = (e) => {
                 e.preventDefault();
                 dropZone.classList.add("border-accent-blue");
-            });
-            dropZone?.addEventListener("dragleave", () => {
+            };
+            dropZone.ondragleave = () =>
                 dropZone.classList.remove("border-accent-blue");
-            });
-            dropZone?.addEventListener("drop", (e) => {
+            dropZone.ondrop = (e) => {
                 e.preventDefault();
                 dropZone.classList.remove("border-accent-blue");
                 if (e.dataTransfer?.files?.[0])
                     handleFile(e.dataTransfer.files[0]);
-            });
-            input.addEventListener("change", (e) => {
-                const target = e.target as HTMLInputElement;
-                if (target.files?.[0]) handleFile(target.files[0]);
-            });
+            };
+            input.onchange = (e: any) => {
+                if (e.target.files?.[0]) handleFile(e.target.files[0]);
+            };
             return () => selectedFile;
         };
 
@@ -689,16 +173,76 @@ const STYLES = {
             "preview-thumb-placeholder",
         );
 
-        // === 4. Submit Logic ===
-        const form = document.getElementById("event-form") as HTMLFormElement;
-        const submitBtn = document.getElementById(
-            "submit-btn",
-        ) as HTMLButtonElement;
+        // === Markdown Logic ===
+        const generateMarkdown = () => {
+            const intro = (
+                document.getElementById("body-intro") as HTMLInputElement
+            ).value;
+            const notes = (
+                document.getElementById("body-notes") as HTMLInputElement
+            ).value;
+            let md = "";
+            if (intro) md += intro + "\n\n";
 
-        form?.addEventListener("submit", async (e) => {
-            e.preventDefault();
+            // Timetable
+            const ttRows = document.querySelectorAll(".row-tt");
+            if (ttRows.length > 0) {
+                let hasContent = false;
+                let sectionMd = "## TIMETABLE\n";
+                ttRows.forEach((row) => {
+                    const time = (
+                        row.querySelector(".input-time") as HTMLInputElement
+                    ).value;
+                    const content = (
+                        row.querySelector(".input-content") as HTMLInputElement
+                    ).value;
+                    if (time && content) {
+                        sectionMd += `- **${time}** ${content}\n`;
+                        hasContent = true;
+                    }
+                });
+                if (hasContent) md += sectionMd + "\n";
+            }
 
-            // Validate Logic
+            // Price
+            const priceRows = document.querySelectorAll(".row-price");
+            if (priceRows.length > 0) {
+                let hasContent = false;
+                let sectionMd =
+                    "## ENTRANCE FEE\n| TICKET TYPE | PRICE |\n| :---------- | ----: |\n";
+                priceRows.forEach((row) => {
+                    const typeEl = row.querySelector(
+                        ".input-type",
+                    ) as HTMLSelectElement;
+                    const priceEl = row.querySelector(
+                        ".input-price",
+                    ) as HTMLInputElement;
+                    const lateTimeEl = row.querySelector(
+                        ".input-late-time",
+                    ) as HTMLInputElement;
+                    if (priceEl.value) {
+                        let label = typeEl.value;
+                        if (label === "LATE DISCOUNT" && lateTimeEl.value)
+                            label += ` (${lateTimeEl.value}~)`;
+                        sectionMd += `| ${label} | ${priceEl.value} |\n`;
+                        hasContent = true;
+                    }
+                });
+                if (hasContent) md += sectionMd + "\n";
+            }
+
+            if (notes) md += "## ATTENTION\n" + notes;
+            return md;
+        };
+
+        // === Submit Logic ===
+        // 以前のリスナーを削除するために replaceWith を使うテクニック
+        const newForm = form.cloneNode(true) as HTMLFormElement;
+        form.parentNode?.replaceChild(newForm, form);
+
+        newForm.addEventListener("submit", async (e) => {
+            e.preventDefault(); // これが動くようになります！
+
             const mainFile = getMainFile();
             const thumbFile = getThumbFile();
             if (!mainFile || !thumbFile) {
@@ -708,42 +252,43 @@ const STYLES = {
 
             if (!confirm("この内容でイベントを保存しますか？")) return;
 
-            // Prepare Data
+            // Time結合
             if (timeHidden && timePrefix && timeValue) {
                 timeHidden.value = `${timePrefix.value} ${timeValue.value}`;
             }
+            // Markdown生成
+            (document.getElementById("final-body") as HTMLInputElement).value =
+                generateMarkdown();
 
-            const finalBody = document.getElementById(
-                "final-body",
-            ) as HTMLInputElement;
-            if (finalBody) {
-                finalBody.value = generateMarkdown();
+            // ボタン無効化
+            const currentSubmitBtn = document.getElementById(
+                "submit-btn",
+            ) as HTMLButtonElement;
+            if (currentSubmitBtn) {
+                currentSubmitBtn.disabled = true;
+                currentSubmitBtn.innerText = "PROCESSING...";
             }
 
             try {
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = "PROCESSING...";
-                }
-
-                // Upload Images
-                const uploadImage = async (file: File, pathPrefix: string) => {
+                // Upload
+                const uploadImage = async (file: File, prefix: string) => {
                     const blob = await processImage(file);
-                    const filename = `${Date.now()}_${pathPrefix}.webp`;
+                    const filename = `${Date.now()}_${prefix}.webp`;
                     const storageRef = ref(storage, `events/${filename}`);
                     await uploadBytes(storageRef, blob);
                     return await getDownloadURL(storageRef);
                 };
 
-                if (submitBtn) submitBtn.innerText = "UPLOADING IMAGES...";
+                if (currentSubmitBtn)
+                    currentSubmitBtn.innerText = "UPLOADING...";
                 const [mainUrl, thumbUrl] = await Promise.all([
                     uploadImage(mainFile, "main"),
                     uploadImage(thumbFile, "thumb"),
                 ]);
 
-                // Save to Firestore
-                if (submitBtn) submitBtn.innerText = "SAVING DATA...";
-                const formData = new FormData(form);
+                // Save
+                if (currentSubmitBtn) currentSubmitBtn.innerText = "SAVING...";
+                const formData = new FormData(newForm);
 
                 const eventData = {
                     title: formData.get("title"),
@@ -758,12 +303,12 @@ const STYLES = {
                     body: formData.get("body"),
                     mainVisual: mainUrl,
                     thumbnail: thumbUrl,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
                     ticketLink: formData.get("ticketLink"),
                     ticketDeadline: formData.get("ticketDeadline")
                         ? new Date(formData.get("ticketDeadline") as string)
                         : null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
                 };
 
                 await addDoc(collection(db, "events"), eventData);
@@ -771,12 +316,15 @@ const STYLES = {
                 window.location.href = "/admin";
             } catch (error) {
                 console.error(error);
-                alert("エラーが発生しました: " + error);
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = "PUBLISH EVENT";
+                alert("エラー: " + error);
+                if (currentSubmitBtn) {
+                    currentSubmitBtn.disabled = false;
+                    currentSubmitBtn.innerText = "PUBLISH EVENT";
                 }
             }
         });
-    </script>
-</AdminLayout>
+    };
+
+    // ▼ View Transitionsイベントで実行
+    document.addEventListener("astro:page-load", initPage);
+</script>

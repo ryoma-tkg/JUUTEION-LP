@@ -2,7 +2,7 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import Input from "../../components/ui/Input.astro";
 
-// --- Style Definitions (Same as new.astro) ---
+// --- Style Definitions (new.astroと同じ) ---
 const STYLES = {
     sectionTitle: "text-xl font-bold text-white flex items-center gap-2",
     subTitle:
@@ -109,11 +109,12 @@ const STYLES = {
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-2">
-                                <Input
-                                    label="Date"
+                                <label class={STYLES.label}>Date</label>
+                                <input
                                     type="date"
                                     name="date"
                                     id="input-date"
+                                    class:list={[STYLES.select, "w-full"]}
                                     required
                                 />
                             </div>
@@ -192,7 +193,7 @@ const STYLES = {
                 </div>
             </section>
 
-            {/* ▼ 追加: 3. 予約設定 */}
+            {/* 3. 予約設定 (TwiPla) */}
             <section class="space-y-6">
                 <h3 class={STYLES.sectionTitle}>
                     <span class="w-1 h-6 bg-accent-blue rounded-sm"></span>
@@ -222,7 +223,7 @@ const STYLES = {
                 </div>
             </section>
 
-            {/* 3. Images */}
+            {/* 4. Images */}
             <section class="space-y-6">
                 <h3 class={STYLES.sectionTitle}>
                     <span class="w-1 h-6 bg-accent-red rounded-sm"></span>
@@ -262,7 +263,6 @@ const STYLES = {
                                 class={STYLES.preview.img}
                             />
                         </div>
-                        {/* 既存URL保持用 */}
                         <input type="hidden" id="existing-main-url" />
                     </div>
                     {/* Thumbnail */}
@@ -294,13 +294,12 @@ const STYLES = {
                                 class={STYLES.preview.img}
                             />
                         </div>
-                        {/* 既存URL保持用 */}
                         <input type="hidden" id="existing-thumb-url" />
                     </div>
                 </div>
             </section>
 
-            {/* 4. Body Builder */}
+            {/* 5. Body Builder */}
             <section
                 class="space-y-8 bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800"
             >
@@ -368,7 +367,7 @@ const STYLES = {
         </form>
     </div>
 
-    {/* Templates (Same as new.astro) */}
+    {/* Templates */}
     <template id="tmpl-tt-row">
         <div class="flex gap-2 items-center group row-tt">
             <input
@@ -425,507 +424,547 @@ const STYLES = {
         } from "firebase/firestore";
         import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-        // === Init & Refs ===
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get("id");
+        // ▼ View Transitions対応: ページロード時に実行
+        document.addEventListener("astro:page-load", () => {
+            const form = document.getElementById(
+                "event-form",
+            ) as HTMLFormElement;
+            if (!form) return; // このページでなければ終了
 
-        if (!eventId) {
-            alert("IDが指定されていません");
-            window.location.href = "/admin";
-        }
+            // === Init & Refs ===
+            const params = new URLSearchParams(window.location.search);
+            const eventId = params.get("id");
 
-        const form = document.getElementById("event-form") as HTMLFormElement;
-        const loadingOverlay = document.getElementById("loading-overlay");
-
-        // UI Refs
-        const refs = {
-            title: document.getElementById("input-title") as HTMLInputElement,
-            subTitle: document.getElementById(
-                "input-subTitle",
-            ) as HTMLInputElement,
-            date: document.getElementById("input-date") as HTMLInputElement,
-            status: document.getElementById(
-                "input-status",
-            ) as HTMLSelectElement,
-            timePrefix: document.getElementById(
-                "time-prefix",
-            ) as HTMLSelectElement,
-            timeValue: document.getElementById(
-                "time-value",
-            ) as HTMLInputElement,
-            place: document.getElementById("input-place") as HTMLInputElement,
-            address: document.getElementById(
-                "input-address",
-            ) as HTMLInputElement,
-            mapEmbed: document.getElementById(
-                "input-mapEmbed",
-            ) as HTMLInputElement,
-            price: document.getElementById("input-price") as HTMLInputElement,
-
-            // Image Refs
-            mainPreview: document.getElementById(
-                "preview-main-img",
-            ) as HTMLImageElement,
-            mainPlaceholder: document.getElementById(
-                "preview-main-placeholder",
-            ) as HTMLElement,
-            mainExisting: document.getElementById(
-                "existing-main-url",
-            ) as HTMLInputElement,
-            thumbPreview: document.getElementById(
-                "preview-thumb-img",
-            ) as HTMLImageElement,
-            thumbPlaceholder: document.getElementById(
-                "preview-thumb-placeholder",
-            ) as HTMLElement,
-            thumbExisting: document.getElementById(
-                "existing-thumb-url",
-            ) as HTMLInputElement,
-
-            ticketLink: document.getElementById(
-                "input-ticketLink",
-            ) as HTMLInputElement,
-            ticketDeadline: document.getElementById(
-                "input-ticketDeadline",
-            ) as HTMLInputElement,
-
-            // Body Refs
-            intro: document.getElementById("body-intro") as HTMLInputElement,
-            notes: document.getElementById("body-notes") as HTMLInputElement,
-            ttContainer: document.getElementById("tt-container"),
-            priceContainer: document.getElementById("price-container"),
-        };
-
-        const tmplTt = document.getElementById(
-            "tmpl-tt-row",
-        ) as HTMLTemplateElement;
-        const tmplPrice = document.getElementById(
-            "tmpl-price-row",
-        ) as HTMLTemplateElement;
-
-        // === Helper Functions (Same as new.astro) ===
-        const addRow = (
-            container: HTMLElement | null,
-            template: HTMLTemplateElement | null,
-            data?: any,
-        ) => {
-            if (!container || !template) return;
-            const clone = template.content.cloneNode(true) as DocumentFragment;
-
-            // Setup Remove Button
-            clone
-                .querySelector(".btn-remove")
-                ?.addEventListener("click", (e) => {
-                    (e.target as HTMLElement).closest(".flex")?.remove();
-                });
-
-            // LATE DISCOUNT Logic
-            const typeSelect = clone.querySelector(
-                ".input-type",
-            ) as HTMLSelectElement;
-            const lateTimeInput = clone.querySelector(
-                ".input-late-time",
-            ) as HTMLInputElement;
-            if (typeSelect && lateTimeInput) {
-                const toggleTime = () => {
-                    if (typeSelect.value === "LATE DISCOUNT") {
-                        lateTimeInput.classList.remove("hidden");
-                        lateTimeInput.required = true;
-                    } else {
-                        lateTimeInput.classList.add("hidden");
-                        lateTimeInput.required = false;
-                    }
-                };
-                typeSelect.addEventListener("change", toggleTime);
-
-                // Pre-fill Logic for LATE DISCOUNT
-                if (data && data.type.includes("LATE DISCOUNT")) {
-                    typeSelect.value = "LATE DISCOUNT";
-                    // Extract time " (02:00~)"
-                    const match = data.type.match(/\((.*?)~\)/);
-                    if (match) lateTimeInput.value = match[1];
-                    toggleTime();
-                } else if (data && data.type) {
-                    typeSelect.value = data.type;
-                }
+            if (!eventId) {
+                alert("IDが指定されていません");
+                window.location.href = "/admin";
+                return;
             }
 
-            // Pre-fill Data
-            if (data) {
-                if (data.time)
-                    (
-                        clone.querySelector(".input-time") as HTMLInputElement
-                    ).value = data.time;
-                if (data.content)
-                    (
-                        clone.querySelector(
-                            ".input-content",
-                        ) as HTMLInputElement
-                    ).value = data.content;
-                if (data.price)
-                    (
-                        clone.querySelector(".input-price") as HTMLInputElement
-                    ).value = data.price;
-            }
+            const loadingOverlay = document.getElementById("loading-overlay");
 
-            container.appendChild(clone);
-        };
+            // UI Refs
+            const refs = {
+                title: document.getElementById(
+                    "input-title",
+                ) as HTMLInputElement,
+                subTitle: document.getElementById(
+                    "input-subTitle",
+                ) as HTMLInputElement,
+                date: document.getElementById("input-date") as HTMLInputElement,
+                status: document.getElementById(
+                    "input-status",
+                ) as HTMLSelectElement,
+                timePrefix: document.getElementById(
+                    "time-prefix",
+                ) as HTMLSelectElement,
+                timeValue: document.getElementById(
+                    "time-value",
+                ) as HTMLInputElement,
+                place: document.getElementById(
+                    "input-place",
+                ) as HTMLInputElement,
+                address: document.getElementById(
+                    "input-address",
+                ) as HTMLInputElement,
+                mapEmbed: document.getElementById(
+                    "input-mapEmbed",
+                ) as HTMLInputElement,
+                price: document.getElementById(
+                    "input-price",
+                ) as HTMLInputElement,
 
-        // === Markdown Parser ===
-        const parseMarkdown = (body: string) => {
-            const lines = body.split("\n");
-            let mode = "intro"; // intro, timetable, price, attention
+                // 予約関連
+                ticketLink: document.getElementById(
+                    "input-ticketLink",
+                ) as HTMLInputElement,
+                ticketDeadline: document.getElementById(
+                    "input-ticketDeadline",
+                ) as HTMLInputElement,
 
-            lines.forEach((line) => {
-                line = line.trim();
-                if (!line) return;
+                // Image Refs
+                mainPreview: document.getElementById(
+                    "preview-main-img",
+                ) as HTMLImageElement,
+                mainPlaceholder: document.getElementById(
+                    "preview-main-placeholder",
+                ) as HTMLElement,
+                mainExisting: document.getElementById(
+                    "existing-main-url",
+                ) as HTMLInputElement,
+                thumbPreview: document.getElementById(
+                    "preview-thumb-img",
+                ) as HTMLImageElement,
+                thumbPlaceholder: document.getElementById(
+                    "preview-thumb-placeholder",
+                ) as HTMLElement,
+                thumbExisting: document.getElementById(
+                    "existing-thumb-url",
+                ) as HTMLInputElement,
 
-                if (line.startsWith("## TIMETABLE")) {
-                    mode = "timetable";
-                    return;
-                }
-                if (line.startsWith("## ENTRANCE FEE")) {
-                    mode = "price";
-                    return;
-                }
-                if (line.startsWith("## ATTENTION")) {
-                    mode = "attention";
-                    return;
-                }
-
-                if (mode === "intro") {
-                    refs.intro.value += line + "\n";
-                } else if (mode === "timetable") {
-                    // Match: - **TIME** CONTENT
-                    const match = line.match(/^-\s*\*\*(.*?)\*\*\s*(.*)$/);
-                    if (match) {
-                        addRow(refs.ttContainer, tmplTt, {
-                            time: match[1],
-                            content: match[2],
-                        });
-                    }
-                } else if (mode === "price") {
-                    // Match: | TYPE | PRICE |
-                    if (
-                        line.startsWith("|") &&
-                        !line.includes("---") &&
-                        !line.includes("TICKET TYPE")
-                    ) {
-                        const parts = line
-                            .split("|")
-                            .map((s) => s.trim())
-                            .filter((s) => s);
-                        if (parts.length >= 2) {
-                            addRow(refs.priceContainer, tmplPrice, {
-                                type: parts[0],
-                                price: parts[1],
-                            });
-                        }
-                    }
-                } else if (mode === "attention") {
-                    refs.notes.value += line + "\n";
-                }
-            });
-        };
-
-        // === Fetch & Populate ===
-        const init = async () => {
-            try {
-                if (!eventId) return;
-                const docRef = doc(db, "events", eventId);
-                const docSnap = await getDoc(docRef);
-
-                if (!docSnap.exists()) {
-                    alert("イベントが見つかりませんでした");
-                    window.location.href = "/admin";
-                    return;
-                }
-
-                const data = docSnap.data();
-
-                // Basic Fields
-                refs.title.value = data.title;
-                refs.subTitle.value = data.subTitle || "";
-
-                // Date (Convert Timestamp to YYYY-MM-DD)
-                const d = data.date.toDate();
-                refs.date.value = d.toISOString().split("T")[0];
-
-                refs.status.value = data.status || "archive";
-                refs.place.value = data.place;
-                refs.address.value = data.address || "";
-                refs.mapEmbed.value = data.mapEmbed || "";
-                refs.price.value = data.price;
-
-                // Time (Split "OPEN 23:00")
-                if (data.time) {
-                    const parts = data.time.split(" ");
-                    if (parts.length >= 2) {
-                        refs.timePrefix.value = parts[0];
-                        refs.timeValue.value = parts[1];
-                    } else {
-                        refs.timeValue.value = data.time;
-                    }
-                }
-
-                // Images
-                if (data.mainVisual) {
-                    refs.mainExisting.value = data.mainVisual;
-                    refs.mainPreview.src = data.mainVisual;
-                    refs.mainPreview.classList.remove("hidden");
-                    refs.mainPlaceholder.classList.add("hidden");
-                }
-                if (data.thumbnail) {
-                    refs.thumbExisting.value = data.thumbnail;
-                    refs.thumbPreview.src = data.thumbnail;
-                    refs.thumbPreview.classList.remove("hidden");
-                    refs.thumbPlaceholder.classList.add("hidden");
-                }
-
-                // Body (Parse Markdown)
-                if (data.body) {
-                    parseMarkdown(data.body);
-                }
-
-                // Show Form
-                loadingOverlay?.classList.add("hidden");
-                form.classList.remove("hidden");
-            } catch (e) {
-                console.error(e);
-                alert("読み込みエラー: " + e);
-            }
-        };
-
-        // === Image Uploader Logic (Same as new.astro) ===
-        // Note: Reused logic but simplified for brevity
-        const setupImageUploader = (
-            inputId: string,
-            dropZoneId: string,
-            imgId: string,
-            placeholderId: string,
-        ) => {
-            const input = document.getElementById(inputId) as HTMLInputElement;
-            const dropZone = document.getElementById(dropZoneId);
-            const img = document.getElementById(imgId) as HTMLImageElement;
-            const placeholder = document.getElementById(placeholderId);
-            let selectedFile: File | null = null;
-
-            const handleFile = (file: File) => {
-                selectedFile = file;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    img.src = e.target?.result as string;
-                    img.classList.remove("hidden");
-                    placeholder?.classList.add("hidden");
-                };
-                reader.readAsDataURL(file);
+                // Body Refs
+                intro: document.getElementById(
+                    "body-intro",
+                ) as HTMLInputElement,
+                notes: document.getElementById(
+                    "body-notes",
+                ) as HTMLInputElement,
+                ttContainer: document.getElementById("tt-container"),
+                priceContainer: document.getElementById("price-container"),
             };
 
-            dropZone?.addEventListener("click", () => input.click());
-            dropZone?.addEventListener("dragover", (e) => {
-                e.preventDefault();
-                dropZone.classList.add("border-accent-blue");
-            });
-            dropZone?.addEventListener("dragleave", () => {
-                dropZone.classList.remove("border-accent-blue");
-            });
-            dropZone?.addEventListener("drop", (e) => {
-                e.preventDefault();
-                dropZone.classList.remove("border-accent-blue");
-                if (e.dataTransfer?.files?.[0])
-                    handleFile(e.dataTransfer.files[0]);
-            });
-            input.addEventListener("change", (e: any) => {
-                if (e.target.files?.[0]) handleFile(e.target.files[0]);
-            });
-            return () => selectedFile;
-        };
+            const tmplTt = document.getElementById(
+                "tmpl-tt-row",
+            ) as HTMLTemplateElement;
+            const tmplPrice = document.getElementById(
+                "tmpl-price-row",
+            ) as HTMLTemplateElement;
 
-        const getMainFile = setupImageUploader(
-            "input-main",
-            "drop-main",
-            "preview-main-img",
-            "preview-main-placeholder",
-        );
-        const getThumbFile = setupImageUploader(
-            "input-thumb",
-            "drop-thumb",
-            "preview-thumb-img",
-            "preview-thumb-placeholder",
-        );
+            // === Helper Functions ===
+            const addRow = (
+                container: HTMLElement | null,
+                template: HTMLTemplateElement | null,
+                data?: any,
+            ) => {
+                if (!container || !template) return;
+                const clone = template.content.cloneNode(
+                    true,
+                ) as DocumentFragment;
 
-        // === Markdown Generator (Reused) ===
-        const generateMarkdown = () => {
-            // ... (Same logic as new.astro - condensed for this file)
-            // Note: In real app, extracting this to a utility file is better
-            let md = "";
-            const intro = refs.intro.value;
-            if (intro) md += intro + "\n\n";
+                clone
+                    .querySelector(".btn-remove")
+                    ?.addEventListener("click", (e) => {
+                        (e.target as HTMLElement).closest(".flex")?.remove();
+                    });
 
-            // Timetable
-            const ttRows = document.querySelectorAll(".row-tt");
-            if (ttRows.length > 0) {
-                let sectionMd = "";
-                ttRows.forEach((row) => {
-                    const time = (
-                        row.querySelector(".input-time") as HTMLInputElement
-                    ).value;
-                    const content = (
-                        row.querySelector(".input-content") as HTMLInputElement
-                    ).value;
-                    if (time && content)
-                        sectionMd += `- **${time}** ${content}\n`;
-                });
-                if (sectionMd) md += "## TIMETABLE\n" + sectionMd + "\n";
-            }
+                // LATE DISCOUNT Logic
+                const typeSelect = clone.querySelector(
+                    ".input-type",
+                ) as HTMLSelectElement;
+                const lateTimeInput = clone.querySelector(
+                    ".input-late-time",
+                ) as HTMLInputElement;
+                if (typeSelect && lateTimeInput) {
+                    const toggleTime = () => {
+                        if (typeSelect.value === "LATE DISCOUNT") {
+                            lateTimeInput.classList.remove("hidden");
+                            lateTimeInput.required = true;
+                        } else {
+                            lateTimeInput.classList.add("hidden");
+                            lateTimeInput.required = false;
+                        }
+                    };
+                    typeSelect.addEventListener("change", toggleTime);
 
-            // Price
-            const priceRows = document.querySelectorAll(".row-price");
-            if (priceRows.length > 0) {
-                let sectionMd = "";
-                priceRows.forEach((row) => {
-                    const typeEl = row.querySelector(
-                        ".input-type",
-                    ) as HTMLSelectElement;
-                    const priceEl = row.querySelector(
-                        ".input-price",
-                    ) as HTMLInputElement;
-                    const lateEl = row.querySelector(
-                        ".input-late-time",
-                    ) as HTMLInputElement;
-                    if (priceEl.value) {
-                        let label = typeEl.value;
-                        if (label === "LATE DISCOUNT" && lateEl.value)
-                            label += ` (${lateEl.value}~)`;
-                        sectionMd += `| ${label} | ${priceEl.value} |\n`;
+                    if (data && data.type.includes("LATE DISCOUNT")) {
+                        typeSelect.value = "LATE DISCOUNT";
+                        const match = data.type.match(/\((.*?)~\)/);
+                        if (match) lateTimeInput.value = match[1];
+                        toggleTime();
+                    } else if (data && data.type) {
+                        typeSelect.value = data.type;
+                    }
+                }
+
+                if (data) {
+                    if (data.time)
+                        (
+                            clone.querySelector(
+                                ".input-time",
+                            ) as HTMLInputElement
+                        ).value = data.time;
+                    if (data.content)
+                        (
+                            clone.querySelector(
+                                ".input-content",
+                            ) as HTMLInputElement
+                        ).value = data.content;
+                    if (data.price)
+                        (
+                            clone.querySelector(
+                                ".input-price",
+                            ) as HTMLInputElement
+                        ).value = data.price;
+                }
+
+                container.appendChild(clone);
+            };
+
+            // === Markdown Parser ===
+            const parseMarkdown = (body: string) => {
+                const lines = body.split("\n");
+                let mode = "intro";
+
+                lines.forEach((line) => {
+                    line = line.trim();
+                    if (!line) return;
+
+                    if (line.startsWith("## TIMETABLE")) {
+                        mode = "timetable";
+                        return;
+                    }
+                    if (line.startsWith("## ENTRANCE FEE")) {
+                        mode = "price";
+                        return;
+                    }
+                    if (line.startsWith("## ATTENTION")) {
+                        mode = "attention";
+                        return;
+                    }
+
+                    if (mode === "intro") {
+                        refs.intro.value += line + "\n";
+                    } else if (mode === "timetable") {
+                        const match = line.match(/^-\s*\*\*(.*?)\*\*\s*(.*)$/);
+                        if (match)
+                            addRow(refs.ttContainer, tmplTt, {
+                                time: match[1],
+                                content: match[2],
+                            });
+                    } else if (mode === "price") {
+                        if (
+                            line.startsWith("|") &&
+                            !line.includes("---") &&
+                            !line.includes("TICKET TYPE")
+                        ) {
+                            const parts = line
+                                .split("|")
+                                .map((s) => s.trim())
+                                .filter((s) => s);
+                            if (parts.length >= 2)
+                                addRow(refs.priceContainer, tmplPrice, {
+                                    type: parts[0],
+                                    price: parts[1],
+                                });
+                        }
+                    } else if (mode === "attention") {
+                        refs.notes.value += line + "\n";
                     }
                 });
-                if (sectionMd) {
-                    md +=
-                        "## ENTRANCE FEE\n| TICKET TYPE | PRICE |\n| :---------- | ----: |\n" +
-                        sectionMd +
-                        "\n";
-                }
-            }
+            };
 
-            // Notes
-            const notes = refs.notes.value;
-            if (notes) md += "## ATTENTION\n" + notes;
+            // === Fetch & Populate ===
+            const init = async () => {
+                try {
+                    const docRef = doc(db, "events", eventId);
+                    const docSnap = await getDoc(docRef);
 
-            return md;
-        };
+                    if (!docSnap.exists()) {
+                        alert("イベントが見つかりませんでした");
+                        window.location.href = "/admin";
+                        return;
+                    }
 
-        // === Image Compression (Reused) ===
-        const processImage = async (file: File): Promise<Blob> => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target?.result as string;
-                    img.onload = () => {
-                        const canvas = document.createElement("canvas");
-                        const MAX_WIDTH = 1200;
-                        let w = img.width,
-                            h = img.height;
-                        if (w > MAX_WIDTH) {
-                            h *= MAX_WIDTH / w;
-                            w = MAX_WIDTH;
+                    const data = docSnap.data();
+
+                    refs.title.value = data.title;
+                    refs.subTitle.value = data.subTitle || "";
+
+                    const d = data.date.toDate();
+                    refs.date.value = d.toISOString().split("T")[0];
+
+                    refs.status.value = data.status || "archive";
+                    refs.place.value = data.place;
+                    refs.address.value = data.address || "";
+                    refs.mapEmbed.value = data.mapEmbed || "";
+                    refs.price.value = data.price;
+
+                    if (data.time) {
+                        const parts = data.time.split(" ");
+                        if (parts.length >= 2) {
+                            refs.timePrefix.value = parts[0];
+                            refs.timeValue.value = parts[1];
+                        } else {
+                            refs.timeValue.value = data.time;
                         }
-                        canvas.width = w;
-                        canvas.height = h;
-                        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
-                        canvas.toBlob(
-                            (b) => (b ? resolve(b) : reject()),
-                            "image/webp",
-                            0.8,
-                        );
-                    };
-                };
-            });
-        };
+                    }
 
-        // === Listeners ===
-        document
-            .getElementById("add-tt-btn")
-            ?.addEventListener("click", () => addRow(refs.ttContainer, tmplTt));
-        document
-            .getElementById("add-price-btn")
-            ?.addEventListener("click", () =>
-                addRow(refs.priceContainer, tmplPrice),
+                    // TwiPla & Deadline
+                    refs.ticketLink.value = data.ticketLink || "";
+                    if (data.ticketDeadline) {
+                        const td = data.ticketDeadline.toDate();
+                        const formatLocal = (d: Date) => {
+                            const pad = (n: number) => (n < 10 ? "0" + n : n);
+                            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                        };
+                        refs.ticketDeadline.value = formatLocal(td);
+                    }
+
+                    // Images
+                    if (data.mainVisual) {
+                        refs.mainExisting.value = data.mainVisual;
+                        refs.mainPreview.src = data.mainVisual;
+                        refs.mainPreview.classList.remove("hidden");
+                        refs.mainPlaceholder.classList.add("hidden");
+                    }
+                    if (data.thumbnail) {
+                        refs.thumbExisting.value = data.thumbnail;
+                        refs.thumbPreview.src = data.thumbnail;
+                        refs.thumbPreview.classList.remove("hidden");
+                        refs.thumbPlaceholder.classList.add("hidden");
+                    }
+
+                    if (data.body) parseMarkdown(data.body);
+
+                    loadingOverlay?.classList.add("hidden");
+                    form.classList.remove("hidden");
+                } catch (e) {
+                    console.error(e);
+                    alert("読み込みエラー: " + e);
+                }
+            };
+
+            // === Helper: Image Uploader ===
+            const setupImageUploader = (
+                inputId: string,
+                dropZoneId: string,
+                imgId: string,
+                placeholderId: string,
+            ) => {
+                const input = document.getElementById(
+                    inputId,
+                ) as HTMLInputElement;
+                const dropZone = document.getElementById(dropZoneId);
+                const img = document.getElementById(imgId) as HTMLImageElement;
+                const placeholder = document.getElementById(placeholderId);
+                let selectedFile: File | null = null;
+
+                if (!input || !dropZone) return () => null;
+
+                const handleFile = (file: File) => {
+                    selectedFile = file;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        img.src = e.target?.result as string;
+                        img.classList.remove("hidden");
+                        placeholder?.classList.add("hidden");
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                dropZone.onclick = () => input.click();
+                dropZone.ondragover = (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add("border-accent-blue");
+                };
+                dropZone.ondragleave = () =>
+                    dropZone.classList.remove("border-accent-blue");
+                dropZone.ondrop = (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove("border-accent-blue");
+                    if (e.dataTransfer?.files?.[0])
+                        handleFile(e.dataTransfer.files[0]);
+                };
+                input.onchange = (e: any) => {
+                    if (e.target.files?.[0]) handleFile(e.target.files[0]);
+                };
+                return () => selectedFile;
+            };
+
+            const getMainFile = setupImageUploader(
+                "input-main",
+                "drop-main",
+                "preview-main-img",
+                "preview-main-placeholder",
+            );
+            const getThumbFile = setupImageUploader(
+                "input-thumb",
+                "drop-thumb",
+                "preview-thumb-img",
+                "preview-thumb-placeholder",
             );
 
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            if (!confirm("変更を保存しますか？")) return;
+            // === Markdown Logic ===
+            const generateMarkdown = () => {
+                const intro = refs.intro.value;
+                const notes = refs.notes.value;
+                let md = "";
+                if (intro) md += intro + "\n\n";
 
-            const submitBtn = document.getElementById(
-                "submit-btn",
-            ) as HTMLButtonElement;
-            submitBtn.disabled = true;
-            submitBtn.innerText = "UPDATING...";
-
-            try {
-                // 1. Image Upload (Only if new file selected)
-                const mainFile = getMainFile();
-                const thumbFile = getThumbFile();
-
-                const uploadIfNeeded = async (
-                    file: File | null,
-                    prefix: string,
-                    existingUrl: string,
-                ) => {
-                    if (!file) return existingUrl;
-                    const blob = await processImage(file);
-                    const filename = `${Date.now()}_${prefix}_update.webp`;
-                    const sRef = ref(storage, `events/${filename}`);
-                    await uploadBytes(sRef, blob);
-                    return await getDownloadURL(sRef);
-                };
-
-                const [mainUrl, thumbUrl] = await Promise.all([
-                    uploadIfNeeded(mainFile, "main", refs.mainExisting.value),
-                    uploadIfNeeded(
-                        thumbFile,
-                        "thumb",
-                        refs.thumbExisting.value,
-                    ),
-                ]);
-
-                // 2. Prepare Data
-                const formData = new FormData(form);
-                const finalBody = generateMarkdown();
-
-                const updateData = {
-                    title: formData.get("title"),
-                    subTitle: formData.get("subTitle"),
-                    date: new Date(formData.get("date") as string),
-                    time: `${refs.timePrefix.value} ${refs.timeValue.value}`,
-                    place: formData.get("place"),
-                    address: formData.get("address"),
-                    mapEmbed: formData.get("mapEmbed"),
-                    price: formData.get("price"),
-                    status: formData.get("status"),
-                    body: finalBody,
-                    mainVisual: mainUrl,
-                    thumbnail: thumbUrl,
-                    updatedAt: serverTimestamp(),
-                };
-
-                if (eventId) {
-                    await updateDoc(doc(db, "events", eventId), updateData);
-                    alert("更新しました！");
-                    window.location.href = "/admin";
+                // Timetable
+                const ttRows = document.querySelectorAll(".row-tt");
+                if (ttRows.length > 0) {
+                    let sectionMd = "";
+                    let hasContent = false;
+                    sectionMd += "## TIMETABLE\n";
+                    ttRows.forEach((row) => {
+                        const time = (
+                            row.querySelector(".input-time") as HTMLInputElement
+                        ).value;
+                        const content = (
+                            row.querySelector(
+                                ".input-content",
+                            ) as HTMLInputElement
+                        ).value;
+                        if (time && content) {
+                            sectionMd += `- **${time}** ${content}\n`;
+                            hasContent = true;
+                        }
+                    });
+                    if (hasContent) md += sectionMd + "\n";
                 }
-            } catch (err) {
-                console.error(err);
-                alert("更新エラー: " + err);
-                submitBtn.disabled = false;
-                submitBtn.innerText = "UPDATE EVENT";
-            }
-        });
 
-        // Start
-        init();
+                // Price
+                const priceRows = document.querySelectorAll(".row-price");
+                if (priceRows.length > 0) {
+                    let sectionMd = "";
+                    let hasContent = false;
+                    sectionMd +=
+                        "## ENTRANCE FEE\n| TICKET TYPE | PRICE |\n| :---------- | ----: |\n";
+                    priceRows.forEach((row) => {
+                        const typeEl = row.querySelector(
+                            ".input-type",
+                        ) as HTMLSelectElement;
+                        const priceEl = row.querySelector(
+                            ".input-price",
+                        ) as HTMLInputElement;
+                        const lateEl = row.querySelector(
+                            ".input-late-time",
+                        ) as HTMLInputElement;
+                        if (priceEl.value) {
+                            let label = typeEl.value;
+                            if (label === "LATE DISCOUNT" && lateEl.value)
+                                label += ` (${lateEl.value}~)`;
+                            sectionMd += `| ${label} | ${priceEl.value} |\n`;
+                            hasContent = true;
+                        }
+                    });
+                    if (hasContent) md += sectionMd + "\n";
+                }
+
+                if (notes) md += "## ATTENTION\n" + notes;
+                return md;
+            };
+
+            const processImage = async (file: File): Promise<Blob> => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target?.result as string;
+                        img.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            const MAX_WIDTH = 1200;
+                            let w = img.width,
+                                h = img.height;
+                            if (w > MAX_WIDTH) {
+                                h *= MAX_WIDTH / w;
+                                w = MAX_WIDTH;
+                            }
+                            canvas.width = w;
+                            canvas.height = h;
+                            canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+                            canvas.toBlob(
+                                (b) => (b ? resolve(b) : reject()),
+                                "image/webp",
+                                0.8,
+                            );
+                        };
+                    };
+                });
+            };
+
+            // === Listeners ===
+            // ボタンが既存であればリスナーを追加 (initPageが呼ばれるたびに実行されるので重複防止のため cloneNode 推奨ですが、
+            // View Transitionsの動作仕様上、DOMが入れ替わるのでシンプルに登録します)
+            document
+                .getElementById("add-tt-btn")
+                ?.addEventListener("click", () =>
+                    addRow(refs.ttContainer, tmplTt),
+                );
+            document
+                .getElementById("add-price-btn")
+                ?.addEventListener("click", () =>
+                    addRow(refs.priceContainer, tmplPrice),
+                );
+
+            // Submit Handler
+            const newForm = form.cloneNode(true) as HTMLFormElement;
+            form.parentNode?.replaceChild(newForm, form);
+
+            newForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                if (!confirm("変更を保存しますか？")) return;
+
+                const submitBtn = document.getElementById(
+                    "submit-btn",
+                ) as HTMLButtonElement;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "UPDATING...";
+                }
+
+                try {
+                    const mainFile = getMainFile();
+                    const thumbFile = getThumbFile();
+
+                    const uploadIfNeeded = async (
+                        file: File | null,
+                        prefix: string,
+                        existingUrl: string,
+                    ) => {
+                        if (!file) return existingUrl;
+                        const blob = await processImage(file);
+                        const filename = `${Date.now()}_${prefix}_update.webp`;
+                        const sRef = ref(storage, `events/${filename}`);
+                        await uploadBytes(sRef, blob);
+                        return await getDownloadURL(sRef);
+                    };
+
+                    const [mainUrl, thumbUrl] = await Promise.all([
+                        uploadIfNeeded(
+                            mainFile,
+                            "main",
+                            refs.mainExisting.value,
+                        ),
+                        uploadIfNeeded(
+                            thumbFile,
+                            "thumb",
+                            refs.thumbExisting.value,
+                        ),
+                    ]);
+
+                    const formData = new FormData(newForm);
+                    const finalBody = generateMarkdown();
+
+                    const updateData = {
+                        title: formData.get("title"),
+                        subTitle: formData.get("subTitle"),
+                        date: new Date(formData.get("date") as string),
+                        time: `${refs.timePrefix.value} ${refs.timeValue.value}`,
+                        place: formData.get("place"),
+                        address: formData.get("address"),
+                        mapEmbed: formData.get("mapEmbed"),
+                        price: formData.get("price"),
+                        status: formData.get("status"),
+                        body: finalBody,
+                        mainVisual: mainUrl,
+                        thumbnail: thumbUrl,
+                        ticketLink: formData.get("ticketLink"),
+                        ticketDeadline: formData.get("ticketDeadline")
+                            ? new Date(formData.get("ticketDeadline") as string)
+                            : null,
+                        updatedAt: serverTimestamp(),
+                    };
+
+                    if (eventId) {
+                        await updateDoc(doc(db, "events", eventId), updateData);
+                        alert("更新しました！");
+                        window.location.href = "/admin";
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("更新エラー: " + err);
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "UPDATE EVENT";
+                    }
+                }
+            });
+
+            // Start
+            init();
+        });
     </script>
 </AdminLayout>
