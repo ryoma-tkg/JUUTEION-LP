@@ -1,330 +1,677 @@
-<script>
-    import { db, storage } from "../../lib/firebase/client";
-    import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-    import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Input from "../../components/ui/Input.astro";
 
-    // ▼ View Transitions対応: ページ読み込み/遷移ごとに実行する関数を作成
-    const initPage = () => {
-        const form = document.getElementById("event-form") as HTMLFormElement;
-        if (!form) return; // このページじゃない場合は終了
+// --- Style Definitions ---
+const STYLES = {
+    sectionTitle: "text-xl font-bold text-white flex items-center gap-2",
+    subTitle:
+        "text-sm font-bold text-zinc-400 mt-6 mb-2 flex items-center gap-2",
+    label: "text-xs text-text-muted uppercase tracking-widest block",
+    select: "w-full bg-surface border border-subtle rounded-2xl px-5 py-4 text-base text-text-main focus:outline-none focus:border-accent-blue transition-colors cursor-pointer appearance-none",
+    inputBase:
+        "bg-surface border border-subtle rounded-xl px-4 py-3 text-sm text-text-main placeholder:text-text-muted/30 focus:outline-none focus:border-accent-blue transition-colors",
+    dropzone: {
+        base: "relative w-full bg-surface border-2 border-dashed border-subtle rounded-2xl overflow-hidden transition-colors group cursor-pointer",
+        main: "aspect-[3/4] hover:border-accent-blue",
+        thumb: "aspect-square hover:border-accent-yellow",
+    },
+    preview: {
+        placeholder:
+            "absolute inset-0 flex flex-col items-center justify-center text-zinc-500 group-hover:text-white transition-colors",
+        img: "absolute inset-0 w-full h-full object-cover hidden",
+        text: "text-xs font-bold",
+    },
+    submitBtn:
+        "w-full bg-white text-black font-bold text-lg py-4 rounded-2xl shadow-xl hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden",
+    addBtn: "text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-1",
+    removeBtn: "text-zinc-500 hover:text-red-500 transition-colors p-2",
+    monoInput: "font-mono text-sm leading-relaxed",
+};
+---
 
-        // === 1. UI Elements ===
-        const timePrefix = document.getElementById(
-            "time-prefix",
-        ) as HTMLSelectElement;
-        const timeValue = document.getElementById(
-            "time-value",
-        ) as HTMLInputElement;
-        const timeHidden = document.getElementById(
-            "time-hidden",
-        ) as HTMLInputElement;
-        const submitBtn = document.getElementById(
-            "submit-btn",
-        ) as HTMLButtonElement;
+<AdminLayout title="New Event">
+    <div class="max-w-4xl mx-auto space-y-8 pb-20">
+        <div
+            class="flex items-center justify-between border-b border-zinc-800 pb-4"
+        >
+            <h2 class="text-3xl font-bold font-en tracking-tight">New Event</h2>
+            <a
+                href="/admin"
+                class="text-sm text-zinc-500 hover:text-white transition-colors"
+                >キャンセルして戻る</a
+            >
+        </div>
 
-        const ttContainer = document.getElementById("tt-container");
-        const priceContainer = document.getElementById("price-container");
-        const tmplTt = document.getElementById(
-            "tmpl-tt-row",
-        ) as HTMLTemplateElement;
-        const tmplPrice = document.getElementById(
-            "tmpl-price-row",
-        ) as HTMLTemplateElement;
+        <form id="event-form" class="space-y-10">
+            {/* 1. Basic Info */}
+            <section class="space-y-6">
+                <h3 class={STYLES.sectionTitle}>
+                    <span class="w-1 h-6 bg-accent-blue rounded-sm"
+                    ></span>基本情報
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <Input
+                            label="Event Title"
+                            name="title"
+                            placeholder="イベント名 (例: 獸酊音)"
+                            required
+                        />
+                        <Input
+                            label="Sub Title"
+                            name="subTitle"
+                            placeholder="サブタイトル (例: Vol.1)"
+                        />
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <Input
+                                    label="Date"
+                                    type="date"
+                                    name="date"
+                                    required
+                                />
+                            </div>
+                            <div class="space-y-2">
+                                <label class={STYLES.label}>Status</label>
+                                <select name="status" class={STYLES.select}>
+                                    <option value="upcoming">UPCOMING</option>
+                                    <option value="open">NOW OPEN</option>
+                                    <option value="soldout">SOLD OUT</option>
+                                    <option value="archive">ARCHIVE</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class={STYLES.label}>Open Time</label>
+                            <div class="flex gap-2">
+                                <select
+                                    id="time-prefix"
+                                    class:list={[STYLES.select, "w-1/3"]}
+                                >
+                                    <option value="OPEN">OPEN</option>
+                                    <option value="START">START</option>
+                                </select>
+                                <input
+                                    type="time"
+                                    id="time-value"
+                                    class:list={[STYLES.select, "w-2/3"]}
+                                    required
+                                />
+                            </div>
+                            <input type="hidden" name="time" id="time-hidden" />
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        // === Helper Functions ===
-        const addRow = (
-            container: HTMLElement | null,
-            template: HTMLTemplateElement | null,
-        ) => {
-            if (!container || !template) return;
-            const clone = template.content.cloneNode(true) as DocumentFragment;
+            {/* 2. Venue & Price */}
+            <section class="space-y-6">
+                <h3 class={STYLES.sectionTitle}>
+                    <span class="w-1 h-6 bg-accent-yellow rounded-sm"
+                    ></span>場所・料金
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <Input
+                            label="Place Name"
+                            name="place"
+                            placeholder="会場名 (例: CLUB ASIA)"
+                            required
+                        />
+                        <Input
+                            label="Address"
+                            name="address"
+                            placeholder="住所 (GoogleMap用)"
+                        />
+                        <Input
+                            label="Google Map Embed URL"
+                            name="mapEmbed"
+                            placeholder="Google Mapの埋め込みURL"
+                        />
+                    </div>
+                    <div class="space-y-4">
+                        <Input
+                            label="Price Info (Short)"
+                            name="price"
+                            placeholder="例: ¥3,500 / 1D"
+                            required
+                        />
+                    </div>
+                </div>
+            </section>
 
-            clone
-                .querySelector(".btn-remove")
-                ?.addEventListener("click", (e) => {
-                    (e.target as HTMLElement).closest(".flex")?.remove();
-                });
+            {/* 3. Ticket */}
+            <section class="space-y-6">
+                <h3 class={STYLES.sectionTitle}>
+                    <span class="w-1 h-6 bg-accent-blue rounded-sm"
+                    ></span>予約設定
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <Input
+                            label="Ticket Link (TwiPla URL)"
+                            name="ticketLink"
+                            placeholder="https://twipla.jp/events/..."
+                        />
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class={STYLES.label}
+                                >Reservation Deadline</label
+                            >
+                            <input
+                                type="datetime-local"
+                                name="ticketDeadline"
+                                class={STYLES.inputBase}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-            // LATE DISCOUNT Logic
-            const typeSelect = clone.querySelector(
-                ".input-type",
+            {/* 4. Images */}
+            <section class="space-y-6">
+                <h3 class={STYLES.sectionTitle}>
+                    <span class="w-1 h-6 bg-accent-red rounded-sm"
+                    ></span>画像設定
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2">
+                        <label class={STYLES.label}>Main Visual (詳細用)</label>
+                        <div
+                            class:list={[
+                                STYLES.dropzone.base,
+                                STYLES.dropzone.main,
+                            ]}
+                            id="drop-main"
+                        >
+                            <input
+                                type="file"
+                                id="input-main"
+                                accept="image/*"
+                                class="hidden"
+                            />
+                            <div
+                                class={STYLES.preview.placeholder}
+                                id="preview-main-placeholder"
+                            >
+                                <span class={STYLES.preview.text}
+                                    >CLICK TO UPLOAD</span
+                                >
+                            </div>
+                            <img
+                                id="preview-main-img"
+                                class={STYLES.preview.img}
+                            />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class={STYLES.label}>Thumbnail (一覧用)</label>
+                        <div
+                            class:list={[
+                                STYLES.dropzone.base,
+                                STYLES.dropzone.thumb,
+                            ]}
+                            id="drop-thumb"
+                        >
+                            <input
+                                type="file"
+                                id="input-thumb"
+                                accept="image/*"
+                                class="hidden"
+                            />
+                            <div
+                                class={STYLES.preview.placeholder}
+                                id="preview-thumb-placeholder"
+                            >
+                                <span class={STYLES.preview.text}
+                                    >CLICK TO UPLOAD</span
+                                >
+                            </div>
+                            <img
+                                id="preview-thumb-img"
+                                class={STYLES.preview.img}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 5. Details */}
+            <section
+                class="space-y-8 bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800"
+            >
+                <h3 class={STYLES.sectionTitle}>
+                    <span class="w-1 h-6 bg-subtle rounded-sm"
+                    ></span>詳細コンテンツ作成
+                </h3>
+                <div>
+                    <h4 class={STYLES.subTitle}>イントロダクション</h4>
+                    <Input
+                        id="body-intro"
+                        multiline
+                        rows="4"
+                        placeholder="イベントの紹介文..."
+                        class={STYLES.monoInput}
+                    />
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class={STYLES.subTitle}>TIMETABLE</h4>
+                        <button
+                            type="button"
+                            id="add-tt-btn"
+                            class={STYLES.addBtn}>＋ 追加</button
+                        >
+                    </div>
+                    <div id="tt-container" class="space-y-2"></div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class={STYLES.subTitle}>ENTRANCE FEE</h4>
+                        <button
+                            type="button"
+                            id="add-price-btn"
+                            class={STYLES.addBtn}>＋ 追加</button
+                        >
+                    </div>
+                    <div id="price-container" class="space-y-2"></div>
+                </div>
+                <div>
+                    <h4 class={STYLES.subTitle}>注意事項など</h4>
+                    <Input
+                        id="body-notes"
+                        multiline
+                        rows="4"
+                        placeholder="## ATTENTION..."
+                        class={STYLES.monoInput}
+                    />
+                </div>
+                <input type="hidden" name="body" id="final-body" />
+            </section>
+
+            <div class="sticky bottom-6 z-50">
+                <button type="submit" id="submit-btn" class={STYLES.submitBtn}>
+                    <span>PUBLISH EVENT</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {/* Templates */}
+    <template id="tmpl-tt-row">
+        <div class="flex gap-2 items-center group row-tt">
+            <input
+                type="time"
+                class:list={[STYLES.inputBase, "w-32 input-time"]}
+                required
+            />
+            <input
+                type="text"
+                class:list={[STYLES.inputBase, "flex-1 input-content"]}
+                placeholder="Artist / Content"
+                required
+            />
+            <button type="button" class={`${STYLES.removeBtn} btn-remove`}
+                >×</button
+            >
+        </div>
+    </template>
+
+    <template id="tmpl-price-row">
+        <div class="flex gap-2 items-center group row-price">
+            <select class:list={[STYLES.inputBase, "w-40 input-type"]}>
+                <option value="DOOR">DOOR</option>
+                <option value="TwiPla">TwiPla</option>
+                <option value="ADV">ADV</option>
+                <option value="LATE DISCOUNT">LATE DISCOUNT</option>
+                <option value="U-23">U-23</option>
+                <option value="VRC">VRC割</option>
+            </select>
+            <input
+                type="time"
+                class:list={[STYLES.inputBase, "w-28 hidden input-late-time"]}
+            />
+            <input
+                type="text"
+                class:list={[STYLES.inputBase, "flex-1 input-price"]}
+                placeholder="¥2,500"
+                required
+            />
+            <button type="button" class={`${STYLES.removeBtn} btn-remove`}
+                >×</button
+            >
+        </div>
+    </template>
+
+    <script>
+        import { db, storage } from "../../lib/firebase/client";
+        import {
+            collection,
+            addDoc,
+            serverTimestamp,
+        } from "firebase/firestore";
+        import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+        // View Transitions対応
+        const initPage = () => {
+            const form = document.getElementById(
+                "event-form",
+            ) as HTMLFormElement;
+            if (!form) return;
+
+            console.log("🚀 New Event Page Initialized");
+
+            // UI Elements
+            const timePrefix = document.getElementById(
+                "time-prefix",
             ) as HTMLSelectElement;
-            const lateTimeInput = clone.querySelector(
-                ".input-late-time",
+            const timeValue = document.getElementById(
+                "time-value",
             ) as HTMLInputElement;
-            if (typeSelect && lateTimeInput) {
-                typeSelect.addEventListener("change", () => {
-                    if (typeSelect.value === "LATE DISCOUNT") {
-                        lateTimeInput.classList.remove("hidden");
-                        lateTimeInput.required = true;
-                    } else {
-                        lateTimeInput.classList.add("hidden");
-                        lateTimeInput.required = false;
-                        lateTimeInput.value = "";
-                    }
-                });
-            }
-            container.appendChild(clone);
-        };
+            const timeHidden = document.getElementById(
+                "time-hidden",
+            ) as HTMLInputElement;
+            const ttContainer = document.getElementById("tt-container");
+            const priceContainer = document.getElementById("price-container");
+            const tmplTt = document.getElementById(
+                "tmpl-tt-row",
+            ) as HTMLTemplateElement;
+            const tmplPrice = document.getElementById(
+                "tmpl-price-row",
+            ) as HTMLTemplateElement;
 
-        // === Event Listeners ===
-        // 既存のリスナーが重複しないよう、cloneNodeでリセットするテクニックもありますが、
-        // astro:page-loadならDOMが書き換わっているため新規登録でOK
-        document
-            .getElementById("add-tt-btn")
-            ?.addEventListener("click", () => addRow(ttContainer, tmplTt));
-        document
-            .getElementById("add-price-btn")
-            ?.addEventListener("click", () =>
-                addRow(priceContainer, tmplPrice),
+            // Row Helper
+            const addRow = (
+                container: HTMLElement | null,
+                template: HTMLTemplateElement | null,
+            ) => {
+                if (!container || !template) return;
+                const clone = template.content.cloneNode(
+                    true,
+                ) as DocumentFragment;
+                clone
+                    .querySelector(".btn-remove")
+                    ?.addEventListener("click", (e) => {
+                        (e.target as HTMLElement).closest(".flex")?.remove();
+                    });
+                const typeSelect = clone.querySelector(
+                    ".input-type",
+                ) as HTMLSelectElement;
+                const lateTimeInput = clone.querySelector(
+                    ".input-late-time",
+                ) as HTMLInputElement;
+                if (typeSelect && lateTimeInput) {
+                    typeSelect.addEventListener("change", () => {
+                        if (typeSelect.value === "LATE DISCOUNT") {
+                            lateTimeInput.classList.remove("hidden");
+                            lateTimeInput.required = true;
+                        } else {
+                            lateTimeInput.classList.add("hidden");
+                            lateTimeInput.required = false;
+                            lateTimeInput.value = "";
+                        }
+                    });
+                }
+                container.appendChild(clone);
+            };
+
+            // Buttons: cloneせず直接登録
+            document
+                .getElementById("add-tt-btn")
+                ?.addEventListener("click", () => addRow(ttContainer, tmplTt));
+            document
+                .getElementById("add-price-btn")
+                ?.addEventListener("click", () =>
+                    addRow(priceContainer, tmplPrice),
+                );
+
+            // Init rows
+            if (ttContainer && ttContainer.children.length === 0)
+                addRow(ttContainer, tmplTt);
+            if (priceContainer && priceContainer.children.length === 0)
+                addRow(priceContainer, tmplPrice);
+
+            // Image Logic
+            const processImage = async (file: File): Promise<Blob> => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target?.result as string;
+                        img.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            const MAX_WIDTH = 1200;
+                            let w = img.width,
+                                h = img.height;
+                            if (w > MAX_WIDTH) {
+                                h *= MAX_WIDTH / w;
+                                w = MAX_WIDTH;
+                            }
+                            canvas.width = w;
+                            canvas.height = h;
+                            canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+                            canvas.toBlob(
+                                (b) => (b ? resolve(b) : reject()),
+                                "image/webp",
+                                0.8,
+                            );
+                        };
+                    };
+                });
+            };
+
+            const setupImageUploader = (
+                inputId: string,
+                dropZoneId: string,
+                imgId: string,
+                placeholderId: string,
+            ) => {
+                const input = document.getElementById(
+                    inputId,
+                ) as HTMLInputElement;
+                const dropZone = document.getElementById(dropZoneId);
+                const img = document.getElementById(imgId) as HTMLImageElement;
+                const placeholder = document.getElementById(placeholderId);
+                let selectedFile: File | null = null;
+
+                if (!input || !dropZone) return () => null;
+
+                const handleFile = (file: File) => {
+                    selectedFile = file;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        img.src = e.target?.result as string;
+                        img.classList.remove("hidden");
+                        placeholder?.classList.add("hidden");
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                // シンプルにクリックイベント登録
+                dropZone.onclick = () => input.click();
+
+                dropZone.ondragover = (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add("border-accent-blue");
+                };
+                dropZone.ondragleave = () =>
+                    dropZone.classList.remove("border-accent-blue");
+                dropZone.ondrop = (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove("border-accent-blue");
+                    if (e.dataTransfer?.files?.[0])
+                        handleFile(e.dataTransfer.files[0]);
+                };
+                input.onchange = (e: any) => {
+                    if (e.target.files?.[0]) handleFile(e.target.files[0]);
+                };
+                return () => selectedFile;
+            };
+
+            const getMainFile = setupImageUploader(
+                "input-main",
+                "drop-main",
+                "preview-main-img",
+                "preview-main-placeholder",
+            );
+            const getThumbFile = setupImageUploader(
+                "input-thumb",
+                "drop-thumb",
+                "preview-thumb-img",
+                "preview-thumb-placeholder",
             );
 
-        // 初期行の追加 (空の場合のみ)
-        if (ttContainer && ttContainer.children.length === 0)
-            addRow(ttContainer, tmplTt);
-        if (priceContainer && priceContainer.children.length === 0)
-            addRow(priceContainer, tmplPrice);
+            // Markdown Logic
+            const generateMarkdown = () => {
+                const intro = (
+                    document.getElementById("body-intro") as HTMLInputElement
+                ).value;
+                const notes = (
+                    document.getElementById("body-notes") as HTMLInputElement
+                ).value;
+                let md = "";
+                if (intro) md += intro + "\n\n";
 
-        // === Image Logic ===
-        const processImage = async (file: File): Promise<Blob> => {
-            // (省略なし: 画像処理ロジックはそのまま維持)
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target?.result as string;
-                    img.onload = () => {
-                        const canvas = document.createElement("canvas");
-                        const MAX_WIDTH = 1200;
-                        let w = img.width;
-                        let h = img.height;
-                        if (w > MAX_WIDTH) {
-                            h *= MAX_WIDTH / w;
-                            w = MAX_WIDTH;
+                const ttRows = document.querySelectorAll(".row-tt");
+                if (ttRows.length > 0) {
+                    let hasContent = false;
+                    let sectionMd = "## TIMETABLE\n";
+                    ttRows.forEach((row) => {
+                        const time = (
+                            row.querySelector(".input-time") as HTMLInputElement
+                        ).value;
+                        const content = (
+                            row.querySelector(
+                                ".input-content",
+                            ) as HTMLInputElement
+                        ).value;
+                        if (time && content) {
+                            sectionMd += `- **${time}** ${content}\n`;
+                            hasContent = true;
                         }
-                        canvas.width = w;
-                        canvas.height = h;
-                        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
-                        canvas.toBlob(
-                            (b) => (b ? resolve(b) : reject()),
-                            "image/webp",
-                            0.8,
-                        );
+                    });
+                    if (hasContent) md += sectionMd + "\n";
+                }
+
+                const priceRows = document.querySelectorAll(".row-price");
+                if (priceRows.length > 0) {
+                    let hasContent = false;
+                    let sectionMd =
+                        "## ENTRANCE FEE\n| TICKET TYPE | PRICE |\n| :---------- | ----: |\n";
+                    priceRows.forEach((row) => {
+                        const typeEl = row.querySelector(
+                            ".input-type",
+                        ) as HTMLSelectElement;
+                        const priceEl = row.querySelector(
+                            ".input-price",
+                        ) as HTMLInputElement;
+                        const lateTimeEl = row.querySelector(
+                            ".input-late-time",
+                        ) as HTMLInputElement;
+                        if (priceEl.value) {
+                            let label = typeEl.value;
+                            if (label === "LATE DISCOUNT" && lateTimeEl.value)
+                                label += ` (${lateTimeEl.value}~)`;
+                            sectionMd += `| ${label} | ${priceEl.value} |\n`;
+                            hasContent = true;
+                        }
+                    });
+                    if (hasContent) md += sectionMd + "\n";
+                }
+
+                if (notes) md += "## ATTENTION\n" + notes;
+                return md;
+            };
+
+            // Submit Handler
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault(); // ここでストップ
+
+                const mainFile = getMainFile();
+                const thumbFile = getThumbFile();
+                if (!mainFile || !thumbFile) {
+                    alert("画像(Main/Thumbnail)は両方必須です");
+                    return;
+                }
+
+                if (!confirm("この内容でイベントを保存しますか？")) return;
+
+                const submitBtn = document.getElementById(
+                    "submit-btn",
+                ) as HTMLButtonElement;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "PROCESSING...";
+                }
+
+                try {
+                    if (timeHidden && timePrefix && timeValue) {
+                        timeHidden.value = `${timePrefix.value} ${timeValue.value}`;
+                    }
+                    (
+                        document.getElementById(
+                            "final-body",
+                        ) as HTMLInputElement
+                    ).value = generateMarkdown();
+
+                    const uploadImage = async (file: File, prefix: string) => {
+                        const blob = await processImage(file);
+                        const filename = `${Date.now()}_${prefix}.webp`;
+                        const storageRef = ref(storage, `events/${filename}`);
+                        await uploadBytes(storageRef, blob);
+                        return await getDownloadURL(storageRef);
                     };
-                };
+
+                    if (submitBtn) submitBtn.innerText = "UPLOADING...";
+                    const [mainUrl, thumbUrl] = await Promise.all([
+                        uploadImage(mainFile, "main"),
+                        uploadImage(thumbFile, "thumb"),
+                    ]);
+
+                    if (submitBtn) submitBtn.innerText = "SAVING...";
+                    const formData = new FormData(form);
+
+                    const eventData = {
+                        title: formData.get("title"),
+                        subTitle: formData.get("subTitle"),
+                        date: new Date(formData.get("date") as string),
+                        time: formData.get("time"),
+                        place: formData.get("place"),
+                        address: formData.get("address"),
+                        mapEmbed: formData.get("mapEmbed"),
+                        price: formData.get("price"),
+                        status: formData.get("status"),
+                        body: formData.get("body"),
+                        mainVisual: mainUrl,
+                        thumbnail: thumbUrl,
+                        ticketLink: formData.get("ticketLink"),
+                        ticketDeadline: formData.get("ticketDeadline")
+                            ? new Date(formData.get("ticketDeadline") as string)
+                            : null,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    };
+
+                    await addDoc(collection(db, "events"), eventData);
+                    alert("保存しました！");
+                    window.location.href = "/admin";
+                } catch (error) {
+                    console.error(error);
+                    alert("エラー: " + error);
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "PUBLISH EVENT";
+                    }
+                }
             });
         };
 
-        const setupImageUploader = (
-            inputId: string,
-            dropZoneId: string,
-            imgId: string,
-            placeholderId: string,
-        ) => {
-            const input = document.getElementById(inputId) as HTMLInputElement;
-            const dropZone = document.getElementById(dropZoneId);
-            const img = document.getElementById(imgId) as HTMLImageElement;
-            const placeholder = document.getElementById(placeholderId);
-            let selectedFile: File | null = null;
-
-            if (!input || !dropZone) return () => null;
-
-            const handleFile = (file: File) => {
-                selectedFile = file;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    img.src = e.target?.result as string;
-                    img.classList.remove("hidden");
-                    placeholder?.classList.add("hidden");
-                };
-                reader.readAsDataURL(file);
-            };
-
-            dropZone.onclick = () => input.click(); // addEventListenerよりonclickが重複防止に安全
-            dropZone.ondragover = (e) => {
-                e.preventDefault();
-                dropZone.classList.add("border-accent-blue");
-            };
-            dropZone.ondragleave = () =>
-                dropZone.classList.remove("border-accent-blue");
-            dropZone.ondrop = (e) => {
-                e.preventDefault();
-                dropZone.classList.remove("border-accent-blue");
-                if (e.dataTransfer?.files?.[0])
-                    handleFile(e.dataTransfer.files[0]);
-            };
-            input.onchange = (e: any) => {
-                if (e.target.files?.[0]) handleFile(e.target.files[0]);
-            };
-            return () => selectedFile;
-        };
-
-        const getMainFile = setupImageUploader(
-            "input-main",
-            "drop-main",
-            "preview-main-img",
-            "preview-main-placeholder",
-        );
-        const getThumbFile = setupImageUploader(
-            "input-thumb",
-            "drop-thumb",
-            "preview-thumb-img",
-            "preview-thumb-placeholder",
-        );
-
-        // === Markdown Logic ===
-        const generateMarkdown = () => {
-            const intro = (
-                document.getElementById("body-intro") as HTMLInputElement
-            ).value;
-            const notes = (
-                document.getElementById("body-notes") as HTMLInputElement
-            ).value;
-            let md = "";
-            if (intro) md += intro + "\n\n";
-
-            // Timetable
-            const ttRows = document.querySelectorAll(".row-tt");
-            if (ttRows.length > 0) {
-                let hasContent = false;
-                let sectionMd = "## TIMETABLE\n";
-                ttRows.forEach((row) => {
-                    const time = (
-                        row.querySelector(".input-time") as HTMLInputElement
-                    ).value;
-                    const content = (
-                        row.querySelector(".input-content") as HTMLInputElement
-                    ).value;
-                    if (time && content) {
-                        sectionMd += `- **${time}** ${content}\n`;
-                        hasContent = true;
-                    }
-                });
-                if (hasContent) md += sectionMd + "\n";
-            }
-
-            // Price
-            const priceRows = document.querySelectorAll(".row-price");
-            if (priceRows.length > 0) {
-                let hasContent = false;
-                let sectionMd =
-                    "## ENTRANCE FEE\n| TICKET TYPE | PRICE |\n| :---------- | ----: |\n";
-                priceRows.forEach((row) => {
-                    const typeEl = row.querySelector(
-                        ".input-type",
-                    ) as HTMLSelectElement;
-                    const priceEl = row.querySelector(
-                        ".input-price",
-                    ) as HTMLInputElement;
-                    const lateTimeEl = row.querySelector(
-                        ".input-late-time",
-                    ) as HTMLInputElement;
-                    if (priceEl.value) {
-                        let label = typeEl.value;
-                        if (label === "LATE DISCOUNT" && lateTimeEl.value)
-                            label += ` (${lateTimeEl.value}~)`;
-                        sectionMd += `| ${label} | ${priceEl.value} |\n`;
-                        hasContent = true;
-                    }
-                });
-                if (hasContent) md += sectionMd + "\n";
-            }
-
-            if (notes) md += "## ATTENTION\n" + notes;
-            return md;
-        };
-
-        // === Submit Logic ===
-        // 以前のリスナーを削除するために replaceWith を使うテクニック
-        const newForm = form.cloneNode(true) as HTMLFormElement;
-        form.parentNode?.replaceChild(newForm, form);
-
-        newForm.addEventListener("submit", async (e) => {
-            e.preventDefault(); // これが動くようになります！
-
-            const mainFile = getMainFile();
-            const thumbFile = getThumbFile();
-            if (!mainFile || !thumbFile) {
-                alert("画像(Main/Thumbnail)は両方必須です");
-                return;
-            }
-
-            if (!confirm("この内容でイベントを保存しますか？")) return;
-
-            // Time結合
-            if (timeHidden && timePrefix && timeValue) {
-                timeHidden.value = `${timePrefix.value} ${timeValue.value}`;
-            }
-            // Markdown生成
-            (document.getElementById("final-body") as HTMLInputElement).value =
-                generateMarkdown();
-
-            // ボタン無効化
-            const currentSubmitBtn = document.getElementById(
-                "submit-btn",
-            ) as HTMLButtonElement;
-            if (currentSubmitBtn) {
-                currentSubmitBtn.disabled = true;
-                currentSubmitBtn.innerText = "PROCESSING...";
-            }
-
-            try {
-                // Upload
-                const uploadImage = async (file: File, prefix: string) => {
-                    const blob = await processImage(file);
-                    const filename = `${Date.now()}_${prefix}.webp`;
-                    const storageRef = ref(storage, `events/${filename}`);
-                    await uploadBytes(storageRef, blob);
-                    return await getDownloadURL(storageRef);
-                };
-
-                if (currentSubmitBtn)
-                    currentSubmitBtn.innerText = "UPLOADING...";
-                const [mainUrl, thumbUrl] = await Promise.all([
-                    uploadImage(mainFile, "main"),
-                    uploadImage(thumbFile, "thumb"),
-                ]);
-
-                // Save
-                if (currentSubmitBtn) currentSubmitBtn.innerText = "SAVING...";
-                const formData = new FormData(newForm);
-
-                const eventData = {
-                    title: formData.get("title"),
-                    subTitle: formData.get("subTitle"),
-                    date: new Date(formData.get("date") as string),
-                    time: formData.get("time"),
-                    place: formData.get("place"),
-                    address: formData.get("address"),
-                    mapEmbed: formData.get("mapEmbed"),
-                    price: formData.get("price"),
-                    status: formData.get("status"),
-                    body: formData.get("body"),
-                    mainVisual: mainUrl,
-                    thumbnail: thumbUrl,
-                    ticketLink: formData.get("ticketLink"),
-                    ticketDeadline: formData.get("ticketDeadline")
-                        ? new Date(formData.get("ticketDeadline") as string)
-                        : null,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                };
-
-                await addDoc(collection(db, "events"), eventData);
-                alert("保存しました！");
-                window.location.href = "/admin";
-            } catch (error) {
-                console.error(error);
-                alert("エラー: " + error);
-                if (currentSubmitBtn) {
-                    currentSubmitBtn.disabled = false;
-                    currentSubmitBtn.innerText = "PUBLISH EVENT";
-                }
-            }
-        });
-    };
-
-    // ▼ View Transitionsイベントで実行
-    document.addEventListener("astro:page-load", initPage);
-</script>
+        // 実行
+        document.addEventListener("astro:page-load", initPage);
+    </script>
+</AdminLayout>

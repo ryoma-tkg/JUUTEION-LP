@@ -4,7 +4,7 @@ import "@fontsource/ibm-plex-sans-jp/700.css";
 import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/700.css";
 
-// ▼ 修正: ClientRouter に変更
+// ▼ 修正: Astro v5対応 (ViewTransitions -> ClientRouter)
 import { ClientRouter } from "astro:transitions";
 
 interface Props {
@@ -23,103 +23,180 @@ const { title } = Astro.props;
         <meta name="generator" content={Astro.generator} />
         <title>{title} | JUUTEION Admin</title>
 
+        {/* ▼ 修正: ClientRouterを追加 */}
         <ClientRouter />
     </head>
     <body
         class="bg-zinc-950 text-zinc-100 antialiased min-h-screen flex flex-col"
-    ></body>
-</html>
-<body class="bg-zinc-950 text-zinc-100 antialiased min-h-screen flex flex-col">
-    {/* Admin Header */}
-    <header
-        class="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex justify-between items-center"
     >
-        <h1 class="font-en font-bold text-lg tracking-widest text-accent-blue">
-            JUUTEION <span class="text-white">ADMIN</span>
-        </h1>
-
-        <div id="user-info" class="hidden flex items-center gap-4">
-            <span id="user-email" class="text-sm text-zinc-400 font-mono"
-            ></span>
-
-            {/* ▼ 追加: サイト更新ボタン */}
-            <button
-                id="deploy-btn"
-                class="text-xs bg-accent-blue/10 text-accent-blue border border-accent-blue/30 px-3 py-1.5 rounded hover:bg-accent-blue/20 transition-colors flex items-center gap-2"
+        {/* Admin Header */}
+        <header
+            class="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex justify-between items-center"
+        >
+            <h1
+                class="font-en font-bold text-lg tracking-widest text-accent-blue"
             >
-                <span class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"
+                JUUTEION <span class="text-white">ADMIN</span>
+            </h1>
+
+            {/* ▼ 修正: 初期状態は hidden のみ (flexはJSで追加) */}
+            <div id="user-info" class="hidden items-center gap-4">
+                <span id="user-email" class="text-sm text-zinc-400 font-mono"
                 ></span>
-                PUBLISH SITE
-            </button>
 
-            <div class="h-4 w-px bg-zinc-700 mx-2"></div>
+                {/* サイト更新ボタン */}
+                <button
+                    id="deploy-btn"
+                    class="text-xs bg-accent-blue/10 text-accent-blue border border-accent-blue/30 px-3 py-1.5 rounded hover:bg-accent-blue/20 transition-colors flex items-center gap-2"
+                >
+                    <span
+                        class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"
+                    ></span>
+                    PUBLISH SITE
+                </button>
 
-            <button
-                id="logout-btn"
-                class="text-xs border border-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-800 transition-colors"
-            >
-                LOGOUT
-            </button>
-        </div>
-    </header>
+                <div class="h-4 w-px bg-zinc-700 mx-2"></div>
 
-    <main class="flex-1 p-6 overflow-auto">
-        <slot />
-    </main>
+                <button
+                    id="logout-btn"
+                    class="text-xs border border-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-800 transition-colors"
+                >
+                    LOGOUT
+                </button>
+            </div>
+        </header>
 
-    <script>
-        import { auth } from "../lib/firebase/client";
-        import { onAuthStateChanged, signOut } from "firebase/auth";
+        <main class="flex-1 p-6 overflow-auto">
+            <slot />
+        </main>
 
-        const userEmailSpan = document.getElementById("user-email");
-        const userInfoDiv = document.getElementById("user-info");
-        const logoutBtn = document.getElementById("logout-btn");
-        const deployBtn = document.getElementById("deploy-btn");
+        <script>
+            import { auth } from "../lib/firebase/client";
+            import { onAuthStateChanged, signOut } from "firebase/auth";
 
-        // 環境変数からGitHub情報を取得
-        const GITHUB_TOKEN = import.meta.env.PUBLIC_GITHUB_TOKEN;
-        const GITHUB_REPO = import.meta.env.PUBLIC_GITHUB_REPO; // 例: "username/repo"
+            console.log("🚀 AdminLayout script loaded");
 
-        const ALLOWED_EMAILS = [
-            "takagi.buckup@gmail.com",
-            "juuteion.events@gmail.com",
-        ];
+            const initAuth = () => {
+                console.log("🔄 initAuth checking...");
 
-        if (auth) {
-            onAuthStateChanged(auth, (user) => {
-                const currentPath = window.location.pathname;
+                const userEmailSpan = document.getElementById("user-email");
+                const userInfoDiv = document.getElementById("user-info");
+                const logoutBtn = document.getElementById("logout-btn");
+                const deployBtn = document.getElementById("deploy-btn");
 
-                if (user) {
-                    // ログイン中
-                    if (!ALLOWED_EMAILS.includes(user.email || "")) {
-                        alert("アクセス権限がありません。");
-                        if (auth) signOut(auth); // authがあることを確認
-                        return;
-                    }
+                const GITHUB_TOKEN = import.meta.env.PUBLIC_GITHUB_TOKEN;
+                const GITHUB_REPO = import.meta.env.PUBLIC_GITHUB_REPO;
 
-                    // ユーザー情報表示
-                    if (userEmailSpan)
-                        userEmailSpan.innerText = user.email || "";
-                    if (userInfoDiv) userInfoDiv.classList.remove("hidden");
+                const ALLOWED_EMAILS = [
+                    "takagi.buckup@gmail.com",
+                    "juuteion.events@gmail.com",
+                ];
 
-                    // ログインページにいる場合はダッシュボードへ
-                    if (currentPath === "/admin/login") {
-                        window.location.href = "/admin";
-                    }
-                } else {
-                    // 未ログイン
-                    if (currentPath !== "/admin/login") {
+                // Authオブジェクトの存在チェック (ローカル変数に確保)
+                const authInstance = auth;
+
+                if (authInstance) {
+                    onAuthStateChanged(authInstance, (user) => {
+                        console.log(
+                            "👤 Auth State Changed:",
+                            user ? user.email : "Logged out",
+                        );
+                        const currentPath = window.location.pathname;
+
+                        if (user) {
+                            // ログイン中
+                            if (!ALLOWED_EMAILS.includes(user.email || "")) {
+                                alert("アクセス権限がありません。");
+                                signOut(authInstance);
+                                return;
+                            }
+
+                            if (userEmailSpan)
+                                userEmailSpan.innerText = user.email || "";
+
+                            // ▼ 修正: 表示時に flex クラスを追加
+                            if (userInfoDiv) {
+                                userInfoDiv.classList.remove("hidden");
+                                userInfoDiv.classList.add("flex");
+                            }
+
+                            // ログインページにいる場合はダッシュボードへ
+                            if (currentPath === "/admin/login") {
+                                window.location.href = "/admin";
+                            }
+                        } else {
+                            // 未ログイン
+                            if (currentPath !== "/admin/login") {
+                                console.log("⚠️ Redirecting to login...");
+                                window.location.href = "/admin/login";
+                            }
+                        }
+                    });
+
+                    // ログアウト処理
+                    logoutBtn?.addEventListener("click", async () => {
+                        await signOut(authInstance);
                         window.location.href = "/admin/login";
-                    }
-                }
-            });
+                    });
 
-            logoutBtn?.addEventListener("click", async () => {
-                if (auth) {
-                    await signOut(auth);
-                    window.location.href = "/admin/login";
+                    // サイト更新（デプロイ）処理
+                    deployBtn?.addEventListener("click", async () => {
+                        if (
+                            !confirm(
+                                "本番サイトを更新しますか？\n（完了まで数分かかります）",
+                            )
+                        )
+                            return;
+
+                        if (!GITHUB_TOKEN || !GITHUB_REPO) {
+                            alert("GitHub設定(.env)が不足しています。");
+                            return;
+                        }
+
+                        deployBtn.setAttribute("disabled", "true");
+                        deployBtn.innerText = "REQUESTING...";
+
+                        try {
+                            const res = await fetch(
+                                `https://api.github.com/repos/${GITHUB_REPO}/dispatches`,
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        Accept: "application/vnd.github.v3+json",
+                                        Authorization: `token ${GITHUB_TOKEN}`,
+                                    },
+                                    body: JSON.stringify({
+                                        event_type: "publish_event",
+                                    }),
+                                },
+                            );
+
+                            if (res.ok) {
+                                alert(
+                                    "更新リクエストを送信しました！\n数分後に本番サイトが更新されます。",
+                                );
+                            } else {
+                                throw new Error(`Status: ${res.status}`);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            alert("リクエストに失敗しました: " + e);
+                        } finally {
+                            deployBtn.removeAttribute("disabled");
+                            deployBtn.innerHTML =
+                                '<span class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"></span> PUBLISH SITE';
+                        }
+                    });
+                } else {
+                    // クライアントサイドでAuthが初期化されていない場合
+                    console.error(
+                        "❌ Firebase Auth not initialized in client context.",
+                    );
                 }
-            });
-        }
-    </script>
-</body>
+            };
+
+            // View Transitions (ClientRouter) 対応: ページロード毎に実行
+            document.addEventListener("astro:page-load", initAuth);
+        </script>
+    </body>
+</html>
