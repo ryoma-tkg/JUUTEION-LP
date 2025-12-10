@@ -32,9 +32,24 @@ const { title } = Astro.props;
             >
                 JUUTEION <span class="text-white">ADMIN</span>
             </h1>
+
             <div id="user-info" class="hidden flex items-center gap-4">
                 <span id="user-email" class="text-sm text-zinc-400 font-mono"
                 ></span>
+
+                {/* ▼ 追加: サイト更新ボタン */}
+                <button
+                    id="deploy-btn"
+                    class="text-xs bg-accent-blue/10 text-accent-blue border border-accent-blue/30 px-3 py-1.5 rounded hover:bg-accent-blue/20 transition-colors flex items-center gap-2"
+                >
+                    <span
+                        class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"
+                    ></span>
+                    PUBLISH SITE
+                </button>
+
+                <div class="h-4 w-px bg-zinc-700 mx-2"></div>
+
                 <button
                     id="logout-btn"
                     class="text-xs border border-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-800 transition-colors"
@@ -55,48 +70,96 @@ const { title } = Astro.props;
             const userEmailSpan = document.getElementById("user-email");
             const userInfoDiv = document.getElementById("user-info");
             const logoutBtn = document.getElementById("logout-btn");
+            const deployBtn = document.getElementById("deploy-btn");
 
-            // 許可するメールアドレス（オーナー）
-            // ※本来はFirestoreのusersコレクション等で管理するのがベストですが、
-            // 今回は簡易的に環境変数またはハードコードで制限します。
+            // 環境変数からGitHub情報を取得
+            const GITHUB_TOKEN = import.meta.env.PUBLIC_GITHUB_TOKEN;
+            const GITHUB_REPO = import.meta.env.PUBLIC_GITHUB_REPO; // 例: "username/repo"
+
             const ALLOWED_EMAILS = [
                 "takagi.buckup@gmail.com",
                 "juuteion.events@gmail.com",
-            ]; // ★あなたのメールアドレスに変更してください
+            ];
 
-            onAuthStateChanged(auth, (user) => {
-                const currentPath = window.location.pathname;
+            if (auth) {
+                onAuthStateChanged(auth, (user) => {
+                    const currentPath = window.location.pathname;
 
-                if (user) {
-                    // ログイン中
-                    if (!ALLOWED_EMAILS.includes(user.email || "")) {
-                        alert("アクセス権限がありません。");
-                        signOut(auth);
+                    if (user) {
+                        if (!ALLOWED_EMAILS.includes(user.email || "")) {
+                            alert("アクセス権限がありません。");
+                            signOut(auth);
+                            return;
+                        }
+
+                        if (userEmailSpan)
+                            userEmailSpan.innerText = user.email || "";
+                        if (userInfoDiv) userInfoDiv.classList.remove("hidden");
+
+                        if (currentPath === "/admin/login") {
+                            window.location.href = "/admin";
+                        }
+                    } else {
+                        if (currentPath !== "/admin/login") {
+                            window.location.href = "/admin/login";
+                        }
+                    }
+                });
+
+                logoutBtn?.addEventListener("click", async () => {
+                    await signOut(auth);
+                    window.location.href = "/admin/login";
+                });
+
+                // ▼ 追加: デプロイボタンの処理
+                deployBtn?.addEventListener("click", async () => {
+                    if (
+                        !confirm(
+                            "本番サイトを更新しますか？\n（完了まで数分かかります）",
+                        )
+                    )
+                        return;
+
+                    if (!GITHUB_TOKEN || !GITHUB_REPO) {
+                        alert("GitHub設定(.env)が不足しています。");
                         return;
                     }
 
-                    // ユーザー情報表示
-                    if (userEmailSpan)
-                        userEmailSpan.innerText = user.email || "";
-                    if (userInfoDiv) userInfoDiv.classList.remove("hidden");
+                    deployBtn.setAttribute("disabled", "true");
+                    deployBtn.innerText = "REQUESTING...";
 
-                    // ログインページにいる場合はダッシュボードへ
-                    if (currentPath === "/admin/login") {
-                        window.location.href = "/admin";
-                    }
-                } else {
-                    // 未ログイン
-                    // ログインページ以外にいる場合はログインページへリダイレクト
-                    if (currentPath !== "/admin/login") {
-                        window.location.href = "/admin/login";
-                    }
-                }
-            });
+                    try {
+                        const res = await fetch(
+                            `https://api.github.com/repos/${GITHUB_REPO}/dispatches`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    Accept: "application/vnd.github.v3+json",
+                                    Authorization: `token ${GITHUB_TOKEN}`,
+                                },
+                                body: JSON.stringify({
+                                    event_type: "publish_event",
+                                }),
+                            },
+                        );
 
-            logoutBtn?.addEventListener("click", async () => {
-                await signOut(auth);
-                window.location.href = "/admin/login";
-            });
+                        if (res.ok) {
+                            alert(
+                                "更新リクエストを送信しました！\n数分後に本番サイトが更新されます。",
+                            );
+                        } else {
+                            throw new Error(`Status: ${res.status}`);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert("リクエストに失敗しました: " + e);
+                    } finally {
+                        deployBtn.removeAttribute("disabled");
+                        deployBtn.innerHTML =
+                            '<span class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"></span> PUBLISH SITE';
+                    }
+                });
+            }
         </script>
     </body>
 </html>
