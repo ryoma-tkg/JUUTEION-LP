@@ -95,14 +95,10 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
     <div class="flex flex-col lg:flex-row min-h-screen">
         {/* [LEFT COLUMN] Visual Only (PC) - TOPページ仕様に合わせる */}
         <aside
-            class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-black"
+            class="hidden lg:flex flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-zinc-950 flex-col items-center justify-center text-center p-12 text-white space-y-6"
         >
-            <div
-                class="absolute inset-0 bg-cover bg-center transition-all duration-700 hover:scale-105"
-                style={bgStyle}
-            >
-            </div>
-            <div class="absolute inset-0 bg-black/30"></div>
+            {/* コンテンツ */}
+            <img src={logo.src} alt="JUUTEION" class="w-auto h-24 opacity-80" />
         </aside>
 
         {/* [RIGHT COLUMN] Content */}

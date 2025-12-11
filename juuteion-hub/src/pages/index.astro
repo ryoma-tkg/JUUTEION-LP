@@ -7,7 +7,6 @@ import Tag from "../components/ui/Tag.astro";
 import SectionHeader from "../components/ui/SectionHeader.astro";
 import logo from "../assets/logo/jto_logo.svg";
 
-// ▼ 追加: 設定ファイルを読み込む
 import { SOCIAL_LINKS } from "../config";
 
 import { db } from "../lib/firebase/client";
@@ -92,12 +91,10 @@ try {
 }
 
 const getBgStyle = (imgUrl: string) => {
-	// 画像がない場合はロゴを薄く表示するスタイルを返す
 	if (imgUrl) return `background-image: url('${imgUrl}')`;
 	return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%; background-repeat: no-repeat; background-position: center; opacity: 0.5;`;
 };
 
-// サムネイルを優先、なければメインビジュアル、それもなければnull
 const imageToUse = heroEvent
 	? heroEvent.thumbnail || heroEvent.mainVisual || null
 	: null;
@@ -112,6 +109,7 @@ const heroData = heroEvent
 			isoStart: heroEvent.startAt?.toISOString(),
 			isoEnd: heroEvent.endAt?.toISOString(),
 			manualStatus: heroEvent.status,
+			imagePosition: heroEvent.imagePosition,
 		}
 	: null;
 
@@ -126,10 +124,9 @@ const isDev = import.meta.env.DEV;
 					{/* PC Side Visual */}
 					<aside class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-black">
 						<div
-							class="absolute inset-0 bg-cover bg-center transition-all duration-700 hover:scale-105"
+							class="absolute inset-0 bg-cover bg-center"
 							style={heroData.bgStyle}
 						/>
-						<div class="absolute inset-0 bg-black/30" />
 					</aside>
 
 					{/* Main Content */}
@@ -274,6 +271,9 @@ const isDev = import.meta.env.DEV;
 											price={heroData.price}
 											image={heroData.imageToUse}
 											href={heroData.href}
+											imagePosition={
+												heroData.imagePosition
+											}
 										/>
 									</div>
 
@@ -303,6 +303,9 @@ const isDev = import.meta.env.DEV;
 															null
 														}
 														href={`/events/${event.id}`}
+														imagePosition={
+															event.imagePosition
+														}
 													/>
 												))}
 											</div>
@@ -348,7 +351,6 @@ const isDev = import.meta.env.DEV;
 								/>
 								<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									{/* Official X */}
-									{/* ▼ 修正: SOCIAL_LINKS.x を使用 */}
 									<a
 										href={SOCIAL_LINKS.x}
 										target="_blank"
@@ -384,7 +386,6 @@ const isDev = import.meta.env.DEV;
 									</a>
 
 									{/* Instagram */}
-									{/* ▼ 修正: SOCIAL_LINKS.instagram を使用 */}
 									<a
 										href={SOCIAL_LINKS.instagram}
 										target="_blank"
@@ -440,7 +441,6 @@ const isDev = import.meta.env.DEV;
 									</a>
 
 									{/* VRChat */}
-									{/* ▼ 修正: SOCIAL_LINKS.vrcGroup を使用 */}
 									<a
 										href={SOCIAL_LINKS.vrcGroup}
 										target="_blank"
