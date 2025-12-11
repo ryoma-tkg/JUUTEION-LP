@@ -950,6 +950,7 @@ const STYLES = {
     };
 
     // --- MAIN ---
+    // --- MAIN ---
     document.addEventListener("astro:page-load", async () => {
         const form = getEl("event-form") as HTMLFormElement;
         const loading = getEl("loading-overlay");
@@ -959,7 +960,24 @@ const STYLES = {
 
         // Mode Check
         const mode = (getEl("form-mode") as HTMLInputElement).value;
-        const originalId = (getEl("original-id") as HTMLInputElement).value;
+
+        // ▼ 変更: hidden input からではなく、まずは変数として扱う
+        let targetId = (getEl("original-id") as HTMLInputElement).value;
+
+        // ▼ 追加: Editモードなら、URLのクエリパラメータ (?id=xxx) からIDを取得する
+        if (mode === "edit" && !targetId) {
+            const params = new URLSearchParams(window.location.search);
+            targetId = params.get("id") || "";
+
+            // 取得したIDをhidden inputにもセットしておく
+            if (targetId) {
+                (getEl("original-id") as HTMLInputElement).value = targetId;
+            } else {
+                alert("エラー: イベントIDが見つかりません。");
+                window.location.href = "/admin";
+                return;
+            }
+        }
 
         const getMainFile = setupImageUploader("main");
         const getThumbFile = setupImageUploader("thumb");
@@ -977,16 +995,17 @@ const STYLES = {
         getEl("add-price-btn")?.addEventListener("click", () =>
             addRow(getEl("price-container"), "tmpl-price-row"),
         );
+
         // LOAD DATA
-        if (originalId) {
+        if (targetId) {
             try {
                 // Editモードの場合、ID欄に今のIDを表示して無効化
                 const customIdInput = getEl(
                     "input-customId",
                 ) as HTMLInputElement;
-                customIdInput.value = originalId;
+                customIdInput.value = targetId;
 
-                const docSnap = await getDoc(doc(db, "events", originalId));
+                const docSnap = await getDoc(doc(db, "events", targetId));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     (getEl("input-title") as HTMLInputElement).value =
@@ -1084,8 +1103,8 @@ const STYLES = {
                 const customId = (
                     getEl("input-customId") as HTMLInputElement
                 ).value.trim();
-                let targetId = originalId; // 編集時は既存ID
 
+                // 変数 targetId を更新・使用する
                 if (mode === "new" && customId) {
                     // 重複チェック
                     const docRef = doc(db, "events", customId);

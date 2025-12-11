@@ -2,10 +2,12 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import EventForm from "../../components/admin/EventForm.astro";
 
-const id = Astro.url.searchParams.get("id");
-if (!id) return Astro.redirect("/admin");
+// ▼ 削除: ここでのIDチェックはビルド時に失敗するため削除します
+// const id = Astro.url.searchParams.get("id");
+// if (!id) return Astro.redirect("/admin");
 ---
 
 <AdminLayout title="Edit Event">
-    <EventForm mode="edit" eventId={id} />
+    {/* IDは渡さず、モードだけ指定してクライアント側で解決させます */}
+    <EventForm mode="edit" />
 </AdminLayout>
