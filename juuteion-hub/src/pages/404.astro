@@ -1,45 +1,51 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Button from "../components/ui/Button.astro";
+
+// メタデータ設定
+const title = "404 Not Found";
+const description = "お探しのページは見つかりませんでした。";
 ---
 
-<Layout title="404 Not Found">
+<Layout title={title} description={description}>
     <div
         class="min-h-[80vh] flex flex-col items-center justify-center text-center p-8 space-y-12"
     >
-        <div class="space-y-4 relative">
-            {/* 背景の装飾的なグロー効果 */}
+        {/* 装飾: 背景の赤いグロー効果（迷子/警告の赤） */}
+        <div class="relative">
             <div
-                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-accent-red/20 rounded-full blur-3xl pointer-events-none"
+                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-accent-red/10 rounded-full blur-[80px] pointer-events-none"
             >
             </div>
 
             <h1
-                class="text-8xl font-bold font-en tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 drop-shadow-[0_0_15px_rgba(229,23,124,0.5)]"
+                class="relative text-9xl font-bold font-en tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/10 drop-shadow-[0_0_20px_rgba(229,23,124,0.3)]"
             >
                 404
             </h1>
+        </div>
+
+        <div class="space-y-2 z-10">
             <p
-                class="text-xl font-bold tracking-widest text-accent-red font-en"
+                class="text-xl font-bold tracking-[0.2em] text-accent-red font-en uppercase"
             >
-                LOST IN THE FLOOR
+                Lost in the Floor
+            </p>
+            <p class="text-sm text-text-muted leading-relaxed font-sans mt-4">
+                お探しのページは、夜の喧騒に紛れて<br />
+                どこかへ消えてしまったようです。
             </p>
         </div>
 
-        <div class="space-y-6 max-w-xs mx-auto">
-            <p class="text-sm text-text-muted leading-relaxed font-sans">
-                お探しのページは、<br />
-                夜の喧騒に紛れて消えてしまったか、<br />
-                最初から存在しなかったようです。
-            </p>
+        {/* アクションボタン */}
+        <div class="w-full max-w-[200px] z-10">
+            <Button variant="secondary" href="/"> FLOORへ戻る </Button>
         </div>
 
-        <div class="w-full max-w-[200px]">
-            <Button variant="secondary" href="/"> TOPへ戻る </Button>
-        </div>
-
-        {/* 装飾的なライン */}
-        <div class="w-px h-16 bg-gradient-to-b from-subtle to-transparent">
+        {/* 装飾: 縦ライン */}
+        <div
+            class="w-px h-24 bg-gradient-to-b from-subtle to-transparent opacity-50"
+        >
         </div>
     </div>
 </Layout>
