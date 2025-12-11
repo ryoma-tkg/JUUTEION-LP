@@ -6,19 +6,20 @@ interface Props {
 
 const { variant = "default", class: className } = Astro.props;
 
-// デザイン定義: 縁を濃く(opacity-50〜100)、背景を薄く(opacity-10)、文字を明るく
+// Shadowを削除し、マットな配色に変更
 const styles = {
-    default: "border border-zinc-600 bg-zinc-800/50 text-zinc-300",
-    blue: "border border-accent-blue/50 bg-accent-blue/10 text-accent-blue shadow-[0_0_10px_rgba(0,151,224,0.1)]",
-    yellow: "border border-accent-yellow/50 bg-accent-yellow/10 text-accent-yellow shadow-[0_0_10px_rgba(254,225,0,0.1)]",
-    red: "border border-accent-red/50 bg-accent-red/10 text-accent-red shadow-[0_0_10px_rgba(229,23,124,0.1)]",
-    green: "border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]",
+    default: "border border-zinc-700 bg-zinc-800 text-zinc-400",
+    // アクセント系も shadow なし。背景は極薄く。
+    blue: "border border-accent-blue/30 bg-accent-blue/5 text-accent-blue",
+    yellow: "border border-accent-yellow/30 bg-accent-yellow/5 text-accent-yellow",
+    red: "border border-accent-red/30 bg-accent-red/5 text-accent-red",
+    green: "border border-emerald-500/30 bg-emerald-500/5 text-emerald-500",
 };
 ---
 
 <span
     class:list={[
-        "px-3 py-1 rounded-full text-xs font-bold tracking-widest inline-flex items-center justify-center backdrop-blur-sm transition-all duration-300",
+        "px-3 py-1 rounded-full text-[10px] font-bold tracking-widest inline-flex items-center justify-center transition-colors duration-300",
         styles[variant],
         className,
     ]}

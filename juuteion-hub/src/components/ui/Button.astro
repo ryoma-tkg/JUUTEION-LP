@@ -13,22 +13,20 @@ const {
     icon = true,
 } = Astro.props;
 
+// rounded-xl で統一。
+// active:scale-[0.98] で「押し込む」感触だけ残し、浮遊感はゼロに。
 const baseStyles =
-    "group rounded-2xl p-4 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 font-bold text-base tracking-wide cursor-pointer w-full";
+    "group rounded-xl p-4 transition-colors duration-200 active:scale-[0.98] flex items-center justify-center gap-2 font-bold text-base tracking-wide cursor-pointer w-full border";
 
 const variants = {
-    // Primary: 白フチ + 半透明背景 + すりガラス効果
-    // - bg-white/10: 白の10%透明
-    // - border-white/30: フチは少し強めの30%
-    // - backdrop-blur-md: 背景をぼかす（マットな質感）
+    // Primary: 影なし。背景の透明度を下げ、マットな板のように。
     primary:
-        "bg-white/10 border border-white/30 text-white backdrop-blur-md hover:bg-white/20 hover:border-white/50 shadow-lg shadow-black/10",
+        "bg-white/10 border-white/10 text-white hover:bg-white/20 hover:border-white/30",
 
-    // Secondary: 変更なし
+    // Secondary: 完全に背景に溶け込ませる。
     secondary:
-        "bg-surface border border-subtle text-text-muted hover:bg-white/5 hover:text-white",
+        "bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700",
 };
-
 const Tag = href ? "a" : "button";
 ---
 
@@ -46,7 +44,7 @@ const Tag = href ? "a" : "button";
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                class="group-hover:translate-x-1 transition-transform"
+                class="opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
             >
                 {variant === "primary" ? (
                     <>

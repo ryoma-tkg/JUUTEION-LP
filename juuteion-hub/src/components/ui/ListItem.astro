@@ -6,39 +6,47 @@ interface Props {
 }
 
 const { title, subTitle, accentColor = "blue" } = Astro.props;
-
 const colorMap = {
+    blue: "group-hover:text-accent-blue group-hover:border-accent-blue/50 group-hover:bg-accent-blue/20",
+    yellow: "group-hover:text-accent-yellow group-hover:border-accent-yellow/50 group-hover:bg-accent-yellow/20",
+    red: "group-hover:text-accent-red group-hover:border-accent-red/50 group-hover:bg-accent-red/20",
+};
+const textColorMap = {
     blue: "group-hover:text-accent-blue",
     yellow: "group-hover:text-accent-yellow",
     red: "group-hover:text-accent-red",
 };
-
-const hoverColor = colorMap[accentColor];
 ---
 
 <div
-    class="py-5 flex items-center justify-between group cursor-pointer border-b border-subtle last:border-none"
+    class="py-4 flex items-center justify-between group cursor-pointer border-b border-subtle last:border-none"
 >
-    <div class="flex items-center gap-5">
+    <div class="flex items-center gap-4">
+        {/* Circle Icon: 文字ではなくCSSシェイプで統一 */}
         <div
-            class="w-12 h-12 rounded-full bg-surface border border-white/10 flex items-center justify-center text-xs font-bold text-text-muted group-hover:border-white/30 transition-colors"
+            class={`w-10 h-10 rounded-full bg-surface border border-subtle flex items-center justify-center transition-all duration-300 ${colorMap[accentColor]}`}
         >
-            ●
+            <div
+                class="w-1.5 h-1.5 rounded-full bg-zinc-600 group-hover:bg-white transition-colors"
+            >
+            </div>
         </div>
         <div>
             <p
-                class={`text-base font-bold text-white ${hoverColor} transition-colors`}
+                class={`text-base font-bold text-white transition-colors ${textColorMap[accentColor]}`}
             >
                 {title}
             </p>
-            <p class="text-xs text-text-muted tracking-wide mt-1 uppercase">
+            <p
+                class="text-xs text-text-muted tracking-wide mt-0.5 uppercase font-en"
+            >
                 {subTitle}
             </p>
         </div>
     </div>
     <span
-        class={`text-xs text-subtle ${hoverColor} transition-colors opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transform duration-300`}
+        class={`text-xs text-subtle transition-colors opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transform duration-300 font-en font-bold ${textColorMap[accentColor]}`}
     >
-        VIEW →
+        VIEW
     </span>
 </div>

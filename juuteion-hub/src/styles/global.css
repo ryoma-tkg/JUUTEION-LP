@@ -29,27 +29,33 @@
 
 /* Markdown Styles */
 /* 詳細ページのMarkdown表示用スタイル */
+
 .prose h2 {
-    @apply text-xl font-bold text-white mt-20 mb-8 font-en uppercase tracking-widest flex items-center gap-4;
+    /* mt-20 -> mt-12 に短縮 */
+    @apply text-2xl font-bold text-white mt-12 mb-6 font-en uppercase tracking-widest flex items-center gap-3 leading-none;
 }
 
 .prose h2::before {
     content: "";
-    @apply block w-2 h-8 bg-text-muted rounded-sm;
+    @apply block w-1 h-5 bg-zinc-700 rounded-full;
 }
 
 .prose h3 {
-    @apply text-lg font-bold text-zinc-200 mt-12 mb-4 font-sans border-b border-subtle pb-2 inline-block pr-8;
+    /* mt-12 -> mt-8 に短縮 */
+    @apply text-lg font-bold text-zinc-200 mt-8 mb-4 font-sans border-b border-subtle pb-2 inline-block pr-8;
 }
 
 .prose p {
     @apply text-zinc-400 leading-relaxed mb-6 font-sans text-base;
 }
 
+/* ... (Remaining styles are the same) ... */
 .prose ul {
     @apply list-none pl-0 space-y-0 my-8 ml-2 relative;
     border-left: none;
 }
+
+/* ... */
 
 .prose ul li {
     @apply pl-0 py-4 relative flex items-baseline font-bold transition-opacity duration-500;
@@ -116,7 +122,7 @@
 }
 
 .prose th {
-    @apply p-4 text-left font-bold border-b border-zinc-700 text-xs text-zinc-400 font-en tracking-widest uppercase;
+    @apply p-4 text-left font-bold border-b border-zinc-700 text-[10px] text-zinc-500 font-en tracking-widest uppercase;
 }
 
 .prose td {

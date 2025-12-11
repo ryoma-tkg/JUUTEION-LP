@@ -11,26 +11,26 @@ interface Props {
 }
 
 const { title, accentColor = "blue", link, class: className } = Astro.props;
-
+// シャドウなしのマットカラー
 const colorMap = {
     blue: "bg-accent-blue",
     yellow: "bg-accent-yellow",
     red: "bg-accent-red",
-    subtle: "bg-subtle",
-    muted: "bg-text-muted",
+    subtle: "bg-zinc-700",
+    muted: "bg-zinc-800",
 };
 ---
 
-<div
-    class:list={[
-        "flex justify-between items-end pb-4 border-b border-subtle",
-        className,
-    ]}
->
-    <div class="flex items-center gap-4">
-        <span class:list={["w-2 h-8 rounded-sm", colorMap[accentColor]]}></span>
+<div class:list={["flex justify-between items-end pb-2", className]}>
+    <div class="flex items-center gap-3">
+        {/* 幅1 (4px) の細いバーで洗練させる */}
+        <span class:list={["w-1 h-5 rounded-full", colorMap[accentColor]]}
+        ></span>
         <h2
-            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+            class:list={[
+                "text-2xl font-bold font-en tracking-widest text-white uppercase leading-none",
+                Astro.props.titleClass,
+            ]}
         >
             {title}
         </h2>
@@ -39,7 +39,7 @@ const colorMap = {
         link && (
             <a
                 href={link.href}
-                class="text-xs font-en font-bold text-text-muted hover:text-white transition-colors tracking-widest mb-1"
+                class="text-[10px] font-en font-bold text-zinc-500 hover:text-white transition-colors tracking-widest mb-0.5"
             >
                 {link.label}
             </a>

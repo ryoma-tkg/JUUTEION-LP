@@ -4,19 +4,21 @@ import type { HTMLAttributes } from "astro/types";
 interface Props extends HTMLAttributes<"input"> {
     label?: string;
     multiline?: boolean;
-    rows?: number | string; // これを追加してエラーを解消
+    rows?: number | string;
 }
 
 const { label, multiline = false, class: className, ...props } = Astro.props;
 
+// rounded-xl に統一
+// focus時のリングを shadow ではなく border color 変化のみにする
 const baseStyles =
-    "w-full bg-surface border border-subtle rounded-2xl px-5 py-4 text-base text-text-main placeholder:text-text-muted/30 focus:outline-none focus:border-accent-blue transition-colors";
+    "w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-base text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-accent-blue focus:bg-zinc-800 transition-colors";
 ---
 
 <div class="space-y-2 w-full">
     {
         label && (
-            <label class="text-xs text-text-muted uppercase tracking-widest block">
+            <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block pl-1">
                 {label}
             </label>
         )
