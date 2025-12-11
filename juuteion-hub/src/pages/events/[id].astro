@@ -28,6 +28,7 @@ interface EventData {
     address?: string;
     ticketLink?: string;
     ticketDeadline?: Date;
+    thumbnail?: string;
 }
 
 interface Props {
@@ -91,9 +92,17 @@ const isDeadlinePassed = event.ticketDeadline
     : false;
 const canReserve = event.ticketLink && !isDeadlinePassed;
 const isDev = import.meta.env.DEV;
+
+const seoDescription = `${formatDate(event.date)} @ ${event.place} | ${event.subTitle || ""} | ${event.price}`;
+const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
 ---
 
-<Layout title={event.title} isFluid={true}>
+<Layout
+    title={event.title}
+    isFluid={true}
+    description={seoDescription}
+    image={seoImage}
+>
     <div class="flex flex-col lg:flex-row min-h-screen">
         {/* [LEFT COLUMN] Visual Only (PC) - TOPページ仕様に合わせる */}
         <aside
@@ -429,7 +438,8 @@ const isDev = import.meta.env.DEV;
                                         fill="currentColor"
                                         ><path
                                             d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-                                        ></path></svg>
+                                        ></path></svg
+                                    >
                                 </div>
                                 <div>
                                     <p
@@ -480,7 +490,8 @@ const isDev = import.meta.env.DEV;
                                             x1="17.5"
                                             x2="17.51"
                                             y1="6.5"
-                                            y2="6.5"></line></svg>
+                                            y2="6.5"></line></svg
+                                    >
                                 </div>
                                 <div>
                                     <p
@@ -510,7 +521,8 @@ const isDev = import.meta.env.DEV;
                                     class="w-10 h-10 rounded-full bg-black flex items-center justify-center text-zinc-500 group-hover:text-white transition-colors border border-subtle group-hover:border-accent-yellow/30"
                                 >
                                     <span class="font-bold text-xs font-en"
-                                        >VRC</span>
+                                        >VRC</span
+                                    >
                                 </div>
                                 <div>
                                     <p

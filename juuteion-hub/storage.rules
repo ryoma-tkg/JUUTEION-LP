@@ -1,9 +1,17 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Firestoreと同じ管理者判定関数
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'takagi.buckup@gmail.com' || 
+        request.auth.token.email == 'juuteion.events@gmail.com'
+      );
+    }
+
     match /{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
   }
 }
