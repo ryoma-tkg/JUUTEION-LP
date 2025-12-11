@@ -1,0 +1,45 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Button from "../components/ui/Button.astro";
+---
+
+<Layout title="404 Not Found">
+    <div
+        class="min-h-[80vh] flex flex-col items-center justify-center text-center p-8 space-y-12"
+    >
+        <div class="space-y-4 relative">
+            {/* 背景の装飾的なグロー効果 */}
+            <div
+                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-accent-red/20 rounded-full blur-3xl pointer-events-none"
+            >
+            </div>
+
+            <h1
+                class="text-8xl font-bold font-en tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 drop-shadow-[0_0_15px_rgba(229,23,124,0.5)]"
+            >
+                404
+            </h1>
+            <p
+                class="text-xl font-bold tracking-widest text-accent-red font-en"
+            >
+                LOST IN THE FLOOR
+            </p>
+        </div>
+
+        <div class="space-y-6 max-w-xs mx-auto">
+            <p class="text-sm text-text-muted leading-relaxed font-sans">
+                お探しのページは、<br />
+                夜の喧騒に紛れて消えてしまったか、<br />
+                最初から存在しなかったようです。
+            </p>
+        </div>
+
+        <div class="w-full max-w-[200px]">
+            <Button variant="secondary" href="/"> TOPへ戻る </Button>
+        </div>
+
+        {/* 装飾的なライン */}
+        <div class="w-px h-16 bg-gradient-to-b from-subtle to-transparent">
+        </div>
+    </div>
+</Layout>
