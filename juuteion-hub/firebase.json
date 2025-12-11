@@ -14,7 +14,7 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(html|json)",
+        "source": "**",
         "headers": [
           {
             "key": "Cache-Control",
@@ -23,7 +23,7 @@
         ]
       },
       {
-        "source": "**/*.@(js|css|jpg|jpeg|png|webp|svg)",
+        "source": "**/*.@(js|css|jpg|jpeg|png|webp|svg|ico)",
         "headers": [
           {
             "key": "Cache-Control",
@@ -37,7 +37,6 @@
     {
       "source": "functions",
       "codebase": "default",
-      "disallowLegacyRuntimeConfig": true,
       "ignore": [
         "node_modules",
         ".git",
