@@ -19,8 +19,10 @@ let sectionTitle = "● NEXT EVENT";
 let sectionColor = "yellow";
 
 try {
+	console.log("🔥 [Build] Fetching events from Firestore...");
 	const q = query(collection(db, "events"));
 	const snapshot = await getDocs(q);
+	console.log(`🔥 [Build] Fetched ${snapshot.size} events.`);
 
 	const allEvents = snapshot.docs.map((doc) => {
 		const data = doc.data() as any;
