@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 @layer utilities {
 
     /* タイムテーブルのアクティブインジケーター用アニメーション */
@@ -136,4 +137,20 @@
 .prose td:not(:first-child),
 .prose th:not(:first-child) {
     @apply text-right;
+}
+
+/* 1. iOSでの「白いチラつき」を物理的に防ぐ */
+html {
+    background-color: #09090b;
+    /* Zinc-950 */
+}
+
+/* 2. フェードアニメーションをスムーズにする定義 */
+/* Safariはデフォルトの動きだとガタつくことがあるため、明示的に指定 */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.3s;
+    /* 少しゆっくりにしてチラつきを目立たなくする */
+    mix-blend-mode: normal;
+    /* ブレンドモードによる発光を防ぐ */
 }
