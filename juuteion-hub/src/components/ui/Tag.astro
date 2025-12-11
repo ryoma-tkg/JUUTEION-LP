@@ -1,15 +1,18 @@
 ---
-interface Props {
+// ▼ 追加: HTMLの標準属性型をインポート
+import type { HTMLAttributes } from "astro/types";
+
+// ▼ 変更: Propsがspanタグの属性を継承するように修正
+interface Props extends HTMLAttributes<"span"> {
     variant?: "default" | "blue" | "yellow" | "red" | "green";
-    class?: string;
+    // classはHTMLAttributesに含まれるため定義不要ですが、明示してもOK
 }
 
-const { variant = "default", class: className } = Astro.props;
+// ▼ 変更: ...props (残りの属性) を受け取る
+const { variant = "default", class: className, ...props } = Astro.props;
 
-// Shadowを削除し、マットな配色に変更
 const styles = {
     default: "border border-zinc-700 bg-zinc-800 text-zinc-400",
-    // アクセント系も shadow なし。背景は極薄く。
     blue: "border border-accent-blue/30 bg-accent-blue/5 text-accent-blue",
     yellow: "border border-accent-yellow/30 bg-accent-yellow/5 text-accent-yellow",
     red: "border border-accent-red/30 bg-accent-red/5 text-accent-red",
@@ -23,6 +26,8 @@ const styles = {
         styles[variant],
         className,
     ]}
+    {...props}
 >
+    {/* ▲ 追加: 受け取ったidなどをspanタグに渡す */}
     <slot />
 </span>

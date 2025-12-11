@@ -1,23 +1,16 @@
 <script>
-    import { db, storage } from "../../lib/firebase/client"; // storageを追加インポート
+    import { db, storage } from "../../lib/firebase/client";
     import {
         collection,
         getDocs,
-        getDoc, // 追加
+        getDoc,
         query,
         orderBy,
         deleteDoc,
         doc,
     } from "firebase/firestore";
-    import { ref, deleteObject } from "firebase/storage"; // 追加
-
-    // ... (定数定義などはそのまま) ...
-    const loading = document.getElementById("loading-indicator");
-    const list = document.getElementById("events-list");
-    const empty = document.getElementById("empty-state");
-    const template = document.getElementById(
-        "event-item-template",
-    ) as HTMLTemplateElement;
+    import { ref, deleteObject } from "firebase/storage";
+    import { formatDateJST } from "../../lib/utils/date";
 
     const BADGE_STYLES: Record<string, string> = {
         upcoming:
@@ -28,20 +21,66 @@
             "bg-zinc-800 text-zinc-400 border-zinc-700 line-through decoration-red-500",
     };
 
-    const formatDate = (dateObj: any) => {
-        if (!dateObj) return "---";
-        const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        const week = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
-            d.getDay()
-        ];
-        return `${y}.${m}.${day} ${week}`;
-    };
+    // ▼ 修正: ページロード後に実行する関数として定義
+    const initPage = async () => {
+        const loading = document.getElementById("loading-indicator");
+        const list = document.getElementById("events-list");
+        const empty = document.getElementById("empty-state");
+        const template = document.getElementById(
+            "event-item-template",
+        ) as HTMLTemplateElement;
 
-    const fetchEvents = async () => {
-        // ... (fetchEventsの中身は以前と同じなので省略可、変更なし) ...
+        // 要素がない場合（別のページなど）は終了
+        if (!list || !template) return;
+
+        // ▼▼▼ 修正ポイント: 画像削除ロジック ▼▼▼
+        const handleDelete = async (id: string, btn: HTMLButtonElement) => {
+            try {
+                btn.disabled = true;
+                btn.innerHTML = "...";
+
+                // 1. まずドキュメントを取得して画像URLを特定する
+                const docRef = doc(db, "events", id);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // 画像削除ヘルパー
+                    const deleteImageRef = async (url: string) => {
+                        if (!url) return;
+                        try {
+                            const fileRef = ref(storage, url);
+                            await deleteObject(fileRef);
+                            console.log("Deleted image:", url);
+                        } catch (e) {
+                            console.warn("Image delete failed:", e);
+                        }
+                    };
+                    await Promise.all([
+                        deleteImageRef(data.mainVisual),
+                        deleteImageRef(data.thumbnail),
+                    ]);
+                }
+
+                // 2. ドキュメントを削除
+                await deleteDoc(docRef);
+
+                // 3. UI更新
+                const item = btn.closest("div.bg-surface");
+                item?.remove();
+                if (list.children.length === 0) {
+                    list.classList.add("hidden");
+                    empty?.classList.remove("hidden");
+                }
+                alert("削除しました。");
+            } catch (e) {
+                console.error(e);
+                alert("削除に失敗しました: " + e);
+                btn.disabled = false;
+            }
+        };
+        // ▲▲▲ 修正エンド ▲▲▲
+
         try {
             const q = query(collection(db, "events"), orderBy("date", "desc"));
             const querySnapshot = await getDocs(q);
@@ -53,8 +92,8 @@
                 return;
             }
 
-            list?.classList.remove("hidden");
-            list!.innerHTML = "";
+            list.classList.remove("hidden");
+            list.innerHTML = "";
 
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
@@ -66,42 +105,61 @@
                 const img = clone.querySelector(
                     ".event-thumb",
                 ) as HTMLImageElement;
-                img.src = data.thumbnail || "/favicon.svg";
+                if (img) img.src = data.thumbnail || "/favicon.svg";
 
                 const badge = clone.querySelector(
                     ".event-badge",
                 ) as HTMLElement;
-                const status = (data.status || "archive") as string;
-                badge.innerText = status;
-                badge.className = `px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase border ${BADGE_STYLES[status] || BADGE_STYLES.archive}`;
+                if (badge) {
+                    const status = (data.status || "archive") as string;
+                    badge.innerText = status;
+                    badge.className = `px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase border ${BADGE_STYLES[status] || BADGE_STYLES.archive}`;
+                }
 
-                (clone.querySelector(".event-title") as HTMLElement).innerText =
-                    data.title;
-                (clone.querySelector(".event-id") as HTMLElement).innerText =
-                    `ID: ${id.slice(0, 6)}...`;
-                (clone.querySelector(".event-date") as HTMLElement).innerText =
-                    formatDate(data.date);
-                (clone.querySelector(".event-place") as HTMLElement).innerText =
-                    `@${data.place}`;
+                const titleEl = clone.querySelector(
+                    ".event-title",
+                ) as HTMLElement;
+                if (titleEl) titleEl.innerText = data.title;
+
+                const idEl = clone.querySelector(".event-id") as HTMLElement;
+                if (idEl) idEl.innerText = `ID: ${id.slice(0, 6)}...`;
+
+                const dateEl = clone.querySelector(
+                    ".event-date",
+                ) as HTMLElement;
+                if (dateEl) {
+                    dateEl.innerText = formatDateJST(
+                        data.date?.toDate
+                            ? data.date.toDate()
+                            : new Date(data.date),
+                    );
+                }
+
+                const placeEl = clone.querySelector(
+                    ".event-place",
+                ) as HTMLElement;
+                if (placeEl) placeEl.innerText = `@${data.place}`;
 
                 const editBtn = clone.querySelector(
                     ".btn-edit",
                 ) as HTMLAnchorElement;
-                editBtn.href = `/admin/edit?id=${id}`;
+                if (editBtn) editBtn.href = `/admin/edit?id=${id}`;
 
                 const deleteBtn = clone.querySelector(
                     ".btn-delete",
                 ) as HTMLButtonElement;
-                deleteBtn.onclick = async () => {
-                    if (
-                        confirm(
-                            `イベント「${data.title}」を削除しますか？\n※関連する画像ファイルも削除されます。この操作は取り消せません。`,
-                        )
-                    ) {
-                        await handleDelete(id, deleteBtn);
-                    }
-                };
-                list?.appendChild(clone);
+                if (deleteBtn) {
+                    deleteBtn.onclick = async () => {
+                        if (
+                            confirm(
+                                `イベント「${data.title}」を削除しますか？\n※関連する画像ファイルも削除されます。この操作は取り消せません。`,
+                            )
+                        ) {
+                            await handleDelete(id, deleteBtn);
+                        }
+                    };
+                }
+                list.appendChild(clone);
             });
         } catch (error) {
             console.error("Fetch error:", error);
@@ -109,61 +167,6 @@
         }
     };
 
-    // ▼▼▼ 修正ポイント: 画像削除ロジックを追加 ▼▼▼
-    const handleDelete = async (id: string, btn: HTMLButtonElement) => {
-        try {
-            btn.disabled = true;
-            btn.innerHTML = "...";
-
-            // 1. まずドキュメントを取得して画像URLを特定する
-            const docRef = doc(db, "events", id);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-
-                // 画像削除ヘルパー
-                const deleteImageRef = async (url: string) => {
-                    if (!url) return;
-                    try {
-                        // Firebase StorageのURLから参照を作成して削除
-                        const fileRef = ref(storage, url);
-                        await deleteObject(fileRef);
-                        console.log("Deleted image:", url);
-                    } catch (e) {
-                        console.warn(
-                            "Image delete failed (might be already deleted):",
-                            e,
-                        );
-                    }
-                };
-
-                // メイン画像とサムネイルを削除
-                await Promise.all([
-                    deleteImageRef(data.mainVisual),
-                    deleteImageRef(data.thumbnail),
-                ]);
-            }
-
-            // 2. ドキュメントを削除
-            await deleteDoc(docRef);
-
-            // 3. UI更新
-            const item = btn.closest("div.bg-surface");
-            item?.remove();
-
-            if (list?.children.length === 0) {
-                list.classList.add("hidden");
-                empty?.classList.remove("hidden");
-            }
-            alert("削除しました。");
-        } catch (e) {
-            console.error(e);
-            alert("削除に失敗しました: " + e);
-            btn.disabled = false;
-        }
-    };
-    // ▲▲▲ 修正エンド ▲▲▲
-
-    fetchEvents();
+    // ▼ ページ読み込み時に実行
+    document.addEventListener("astro:page-load", initPage);
 </script>

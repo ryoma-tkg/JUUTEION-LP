@@ -9,7 +9,6 @@ interface Props {
 const { mode, eventId } = Astro.props;
 const title = mode === "new" ? "New Event" : "Edit Event";
 const submitLabel = mode === "new" ? "PUBLISH EVENT" : "UPDATE EVENT";
-
 // スタイル定義
 const STYLES = {
     section:
@@ -545,7 +544,7 @@ const STYLES = {
     </form>
 </div>
 
-{/* TEMPLATES (Timetable & Price Row) - 省略なし */}
+{/* TEMPLATES (Timetable & Price Row) */}
 <template id="tmpl-tt-row">
     <div
         class="flex gap-2 items-center group row-tt animate-in fade-in slide-in-from-top-2 duration-300 mb-2"
@@ -667,11 +666,14 @@ const STYLES = {
         serverTimestamp,
     } from "firebase/firestore";
     import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+    import {
+        toJSTDateInputValue,
+        toJSTDatetimeInputValue,
+    } from "../../lib/utils/date";
 
     // --- UTILS ---
     const getEl = (id: string) => document.getElementById(id);
     const pad = (n: number) => (n < 10 ? "0" + n : n);
-
     // 画像圧縮処理
     const processImage = async (file: File): Promise<Blob> => {
         return new Promise((resolve, reject) => {
@@ -705,8 +707,7 @@ const STYLES = {
             reader.onerror = reject;
         });
     };
-
-    // Markdown Parser / Generator / UI Helpers (省略せず維持)
+    // Markdown Parser / Generator / UI Helpers
     const parseMarkdown = (body: string) => {
         const lines = body.split("\n");
         let mode = "intro";
@@ -717,7 +718,6 @@ const STYLES = {
 
         if (ttContainer) ttContainer.innerHTML = "";
         if (priceContainer) priceContainer.innerHTML = "";
-
         lines.forEach((line) => {
             line = line.trim();
             if (!line && mode !== "intro" && mode !== "attention") return;
@@ -770,7 +770,6 @@ const STYLES = {
         const notes = (getEl("body-notes") as HTMLTextAreaElement).value.trim();
         let md = "";
         if (intro) md += intro + "\n\n";
-
         const ttRows = document.querySelectorAll(".row-tt");
         if (ttRows.length > 0) {
             md += "## TIMETABLE\n";
@@ -842,13 +841,11 @@ const STYLES = {
         if (!container) return;
         const tmpl = getEl(tmplId) as HTMLTemplateElement;
         const clone = tmpl.content.cloneNode(true) as DocumentFragment;
-
         clone
             .querySelector(".btn-remove")
             ?.addEventListener("click", (e) =>
                 (e.target as HTMLElement).closest(".group")?.remove(),
             );
-
         const typeSelect = clone.querySelector(
             ".input-type",
         ) as HTMLSelectElement;
@@ -904,7 +901,6 @@ const STYLES = {
         }
         container.appendChild(clone);
     };
-
     const setupImageUploader = (id: string) => {
         const dropZone = getEl(`drop-${id}`);
         const input = getEl(`input-${id}`) as HTMLInputElement;
@@ -981,7 +977,6 @@ const STYLES = {
         getEl("add-price-btn")?.addEventListener("click", () =>
             addRow(getEl("price-container"), "tmpl-price-row"),
         );
-
         // LOAD DATA
         if (originalId) {
             try {
@@ -1004,11 +999,8 @@ const STYLES = {
                         data.mapEmbed || "";
 
                     const d = data.date.toDate();
-                    const y = d.getFullYear();
-                    const m = String(d.getMonth() + 1).padStart(2, "0");
-                    const day = String(d.getDate()).padStart(2, "0");
                     (getEl("input-date") as HTMLInputElement).value =
-                        `${y}-${m}-${day}`;
+                        toJSTDateInputValue(d);
 
                     if (data.time) {
                         const parts = data.time.split(" ");
@@ -1035,14 +1027,9 @@ const STYLES = {
 
                     if (data.ticketDeadline) {
                         const td = data.ticketDeadline.toDate();
-                        const ty = td.getFullYear();
-                        const tm = String(td.getMonth() + 1).padStart(2, "0");
-                        const tdd = String(td.getDate()).padStart(2, "0");
-                        const th = String(td.getHours()).padStart(2, "0");
-                        const tmin = String(td.getMinutes()).padStart(2, "0");
                         (
                             getEl("input-ticketDeadline") as HTMLInputElement
-                        ).value = `${ty}-${tm}-${tdd}T${th}:${tmin}`;
+                        ).value = toJSTDatetimeInputValue(td);
                     }
                     if (data.mainVisual) {
                         const img = getEl(
@@ -1070,7 +1057,6 @@ const STYLES = {
                         ).value = data.thumbnail;
                     }
                     if (data.body) parseMarkdown(data.body);
-
                     form.dataset.loaded = "true";
                     loading?.classList.add("opacity-0", "pointer-events-none");
                 }
@@ -1121,10 +1107,8 @@ const STYLES = {
                 const timeVal = (getEl("time-value") as HTMLInputElement).value;
                 (getEl("time-hidden") as HTMLInputElement).value =
                     `${timePrefix} ${timeVal}`;
-
                 (getEl("final-body") as HTMLInputElement).value =
                     generateMarkdown();
-
                 const uploadImage = async (
                     file: File | null,
                     prefix: string,
@@ -1142,7 +1126,6 @@ const STYLES = {
                     uploadImage(getMainFile(), "main"),
                     uploadImage(getThumbFile(), "thumb"),
                 ]);
-
                 const formData = new FormData(form);
                 const finalData: any = {
                     title: formData.get("title"),
@@ -1172,7 +1155,6 @@ const STYLES = {
                         : null,
                     updatedAt: serverTimestamp(),
                 };
-
                 submitBtn.innerHTML = `<span>WRITING DB...</span>`;
 
                 if (mode === "edit" && targetId) {

@@ -4,13 +4,13 @@ import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
 import logo from "../../assets/logo/jto_logo.svg";
-
 // ▼ Firebase & Markdown
 import { db } from "../../lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { marked } from "marked";
 
 import { getEventStatus } from "../../lib/utils/eventStatus";
+import { formatDateJST } from "../../lib/utils/date";
 
 interface EventData {
     id: string;
@@ -62,38 +62,25 @@ export async function getStaticPaths() {
 const { event } = Astro.props;
 const contentHtml = await marked.parse(event.body || "");
 
-const formatDate = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    const day = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
-        date.getDay()
-    ];
-    return `${y}.${m}.${d} ${day}`;
-};
-
 const statusData = getEventStatus(
     event.date,
     event.time,
     event.closeTime,
     event.status,
 );
-
 // ▼ 追加: TOPページと同じ背景スタイル生成ロジック
 const getBgStyle = (imgUrl: string) => {
     if (imgUrl) return `background-image: url('${imgUrl}')`;
     return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%; background-repeat: no-repeat; opacity: 0.5;`;
 };
 const bgStyle = getBgStyle(event.mainVisual);
-
 const now = new Date();
 const isDeadlinePassed = event.ticketDeadline
     ? now > event.ticketDeadline
     : false;
 const canReserve = event.ticketLink && !isDeadlinePassed;
 const isDev = import.meta.env.DEV;
-
-const seoDescription = `${formatDate(event.date)} @ ${event.place} | ${event.subTitle || ""} | ${event.price}`;
+const seoDescription = `${formatDateJST(event.date)} @ ${event.place} | ${event.subTitle || ""} | ${event.price}`;
 const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
 ---
 
@@ -271,7 +258,7 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                     DATE
                                 </p>
                                 <p class="text-lg font-bold text-white font-en">
-                                    {formatDate(event.date)}
+                                    {formatDateJST(event.date)}
                                 </p>
                                 <p class="text-sm text-text-muted font-en">
                                     {event.time}
@@ -396,7 +383,7 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                         )}
                                     </div>
                                     <a
-                                        href={`http://maps.google.com/maps?q=${encodeURIComponent(event.place + " " + (event.address || ""))}`}
+                                        href={`http://maps.google.com/maps?q=$?q=${encodeURIComponent(event.place + " " + (event.address || ""))}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="text-xs font-bold font-en text-accent-blue hover:text-white transition-colors border-b border-accent-blue/30 pb-0.5"

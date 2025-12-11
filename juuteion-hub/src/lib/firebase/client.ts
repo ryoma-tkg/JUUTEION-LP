@@ -2,6 +2,8 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAuth, type Auth } from "firebase/auth";
+// ▼ 追加
+import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
     apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
@@ -12,7 +14,6 @@ const firebaseConfig = {
     appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
 };
 
-// ▼ デバッグ用: 設定値を文字列で表示（確認後、後で削除します）
 if (typeof window !== "undefined") {
     console.log("🔥 Firebase Config:", JSON.stringify(firebaseConfig, null, 2));
 }
@@ -21,6 +22,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+// ▼ 追加: Functionsのインスタンス化 (リージョンは東京: asia-northeast1 推奨)
+export const functions = getFunctions(app, "asia-northeast1");
 
-// Authはブラウザ環境のみ初期化
 export const auth: Auth | null = (typeof window !== "undefined") ? getAuth(app) : null;
