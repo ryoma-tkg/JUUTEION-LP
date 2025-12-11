@@ -674,6 +674,7 @@ const STYLES = {
     // --- UTILS ---
     const getEl = (id: string) => document.getElementById(id);
     const pad = (n: number) => (n < 10 ? "0" + n : n);
+
     // 画像圧縮処理
     const processImage = async (file: File): Promise<Blob> => {
         return new Promise((resolve, reject) => {
@@ -707,7 +708,8 @@ const STYLES = {
             reader.onerror = reject;
         });
     };
-    // Markdown Parser / Generator / UI Helpers
+
+    // ▼ 修正: データ消失防止版 Markdown Parser
     const parseMarkdown = (body: string) => {
         const lines = body.split("\n");
         let mode = "intro";
@@ -718,46 +720,66 @@ const STYLES = {
 
         if (ttContainer) ttContainer.innerHTML = "";
         if (priceContainer) priceContainer.innerHTML = "";
+
         lines.forEach((line) => {
-            line = line.trim();
-            if (!line && mode !== "intro" && mode !== "attention") return;
-            if (line.startsWith("## TIMETABLE")) {
+            const trimmed = line.trim();
+            // セクション切り替え判定
+            if (trimmed.startsWith("## TIMETABLE")) {
                 mode = "timetable";
                 return;
             }
-            if (line.startsWith("## ENTRANCE FEE")) {
+            if (trimmed.startsWith("## ENTRANCE FEE")) {
                 mode = "price";
                 return;
             }
-            if (line.startsWith("## ATTENTION")) {
+            if (trimmed.startsWith("## ATTENTION")) {
                 mode = "attention";
                 return;
             }
 
-            if (mode === "intro") introInput.value += line + "\n";
-            else if (mode === "attention") notesInput.value += line + "\n";
-            else if (mode === "timetable") {
-                const match = line.match(/^-\s*\*\*(.*?)\*\*\s*(.*)$/);
-                if (match)
+            // 各モードでの処理
+            if (mode === "intro") {
+                introInput.value += line + "\n";
+            } else if (mode === "attention") {
+                notesInput.value += line + "\n";
+            } else if (mode === "timetable") {
+                const match = trimmed.match(/^-\s*\*\*(.*?)\*\*\s*(.*)$/);
+                if (match) {
                     addRow(ttContainer, "tmpl-tt-row", {
                         time: match[1],
                         content: match[2],
                     });
+                } else if (trimmed !== "") {
+                    // ▼ パースできない行は「ATTENTION」に退避（消失防止）
+                    notesInput.value += `[Unknown Line from Timetable]: ${line}\n`;
+                }
             } else if (mode === "price") {
+                // テーブル行の判定
                 if (
-                    line.startsWith("|") &&
-                    !line.includes("---") &&
-                    !line.includes("TICKET TYPE")
+                    trimmed.startsWith("|") &&
+                    !trimmed.includes("---") &&
+                    !trimmed.includes("TICKET TYPE")
                 ) {
-                    const parts = line
+                    const parts = trimmed
                         .split("|")
                         .map((s) => s.trim())
                         .filter((s) => s);
-                    if (parts.length >= 2)
+                    if (parts.length >= 2) {
                         addRow(priceContainer, "tmpl-price-row", {
                             type: parts[0],
                             price: parts[1],
                         });
+                    } else if (trimmed !== "") {
+                        // ▼ パースできない行は「ATTENTION」に退避
+                        notesInput.value += `[Unknown Line from Price]: ${line}\n`;
+                    }
+                } else if (
+                    trimmed !== "" &&
+                    !trimmed.includes("---") &&
+                    !trimmed.includes("TICKET TYPE")
+                ) {
+                    // ▼ パイプを含まない行も退避
+                    notesInput.value += `[Unknown Line from Price]: ${line}\n`;
                 }
             }
         });
@@ -770,6 +792,7 @@ const STYLES = {
         const notes = (getEl("body-notes") as HTMLTextAreaElement).value.trim();
         let md = "";
         if (intro) md += intro + "\n\n";
+
         const ttRows = document.querySelectorAll(".row-tt");
         if (ttRows.length > 0) {
             md += "## TIMETABLE\n";
@@ -802,6 +825,7 @@ const STYLES = {
                 const twiplaEl = row.querySelector(
                     ".input-twipla-deadline",
                 ) as HTMLInputElement;
+
                 if (priceEl.value) {
                     let label = typeEl.value;
                     if (label === "LATE DISCOUNT" && lateTimeEl.value)
@@ -809,6 +833,7 @@ const STYLES = {
                     if (label === "TwiPla" && twiplaEl.value) {
                         const d = new Date(twiplaEl.value);
                         if (!isNaN(d.getTime())) {
+                            // 日付フォーマット調整
                             const mon = d.getMonth() + 1;
                             const day = d.getDate();
                             const hh = String(d.getHours()).padStart(2, "0");
@@ -824,6 +849,7 @@ const STYLES = {
             });
             md += "\n";
         }
+
         if (notes) md += "## ATTENTION\n" + notes;
         return md;
     };
@@ -901,12 +927,14 @@ const STYLES = {
         }
         container.appendChild(clone);
     };
+
     const setupImageUploader = (id: string) => {
         const dropZone = getEl(`drop-${id}`);
         const input = getEl(`input-${id}`) as HTMLInputElement;
         const img = getEl(`preview-${id}-img`) as HTMLImageElement;
         const ph = getEl(`preview-${id}-placeholder`);
         let fileToUpload: File | null = null;
+
         const updatePreview = (file: File) => {
             if (!file.type.startsWith("image/")) return;
             fileToUpload = file;
@@ -918,6 +946,7 @@ const STYLES = {
             };
             reader.readAsDataURL(file);
         };
+
         if (!dropZone || !input) return () => null;
         dropZone.onclick = () => input.click();
         input.onchange = (e: any) => {
@@ -950,7 +979,6 @@ const STYLES = {
     };
 
     // --- MAIN ---
-    // --- MAIN ---
     document.addEventListener("astro:page-load", async () => {
         const form = getEl("event-form") as HTMLFormElement;
         const loading = getEl("loading-overlay");
@@ -961,15 +989,11 @@ const STYLES = {
         // Mode Check
         const mode = (getEl("form-mode") as HTMLInputElement).value;
 
-        // ▼ 変更: hidden input からではなく、まずは変数として扱う
+        // ID取得ロジック (URLパラメータ優先)
         let targetId = (getEl("original-id") as HTMLInputElement).value;
-
-        // ▼ 追加: Editモードなら、URLのクエリパラメータ (?id=xxx) からIDを取得する
         if (mode === "edit" && !targetId) {
             const params = new URLSearchParams(window.location.search);
             targetId = params.get("id") || "";
-
-            // 取得したIDをhidden inputにもセットしておく
             if (targetId) {
                 (getEl("original-id") as HTMLInputElement).value = targetId;
             } else {
@@ -999,7 +1023,7 @@ const STYLES = {
         // LOAD DATA
         if (targetId) {
             try {
-                // Editモードの場合、ID欄に今のIDを表示して無効化
+                // EditモードならID欄に値をセット
                 const customIdInput = getEl(
                     "input-customId",
                 ) as HTMLInputElement;
@@ -1075,7 +1099,10 @@ const STYLES = {
                             getEl("existing-thumb-url") as HTMLInputElement
                         ).value = data.thumbnail;
                     }
+
+                    // Markdownパース実行
                     if (data.body) parseMarkdown(data.body);
+
                     form.dataset.loaded = "true";
                     loading?.classList.add("opacity-0", "pointer-events-none");
                 }
@@ -1084,6 +1111,7 @@ const STYLES = {
                 alert("データの読み込みに失敗しました: " + e);
             }
         } else {
+            // Newモード
             form.dataset.loaded = "true";
             addRow(getEl("tt-container"), "tmpl-tt-row");
             addRow(getEl("price-container"), "tmpl-price-row");
@@ -1104,9 +1132,7 @@ const STYLES = {
                     getEl("input-customId") as HTMLInputElement
                 ).value.trim();
 
-                // 変数 targetId を更新・使用する
                 if (mode === "new" && customId) {
-                    // 重複チェック
                     const docRef = doc(db, "events", customId);
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
@@ -1126,8 +1152,12 @@ const STYLES = {
                 const timeVal = (getEl("time-value") as HTMLInputElement).value;
                 (getEl("time-hidden") as HTMLInputElement).value =
                     `${timePrefix} ${timeVal}`;
+
+                // Markdown生成
                 (getEl("final-body") as HTMLInputElement).value =
                     generateMarkdown();
+
+                // 画像アップロード
                 const uploadImage = async (
                     file: File | null,
                     prefix: string,
@@ -1145,6 +1175,7 @@ const STYLES = {
                     uploadImage(getMainFile(), "main"),
                     uploadImage(getThumbFile(), "thumb"),
                 ]);
+
                 const formData = new FormData(form);
                 const finalData: any = {
                     title: formData.get("title"),
@@ -1174,18 +1205,16 @@ const STYLES = {
                         : null,
                     updatedAt: serverTimestamp(),
                 };
+
                 submitBtn.innerHTML = `<span>WRITING DB...</span>`;
 
                 if (mode === "edit" && targetId) {
-                    // 更新 (updateDoc)
                     await updateDoc(doc(db, "events", targetId), finalData);
                 } else if (mode === "new") {
                     finalData.createdAt = serverTimestamp();
                     if (targetId) {
-                        // ID指定保存 (setDoc)
                         await setDoc(doc(db, "events", targetId), finalData);
                     } else {
-                        // ID自動生成 (addDoc)
                         await addDoc(collection(db, "events"), finalData);
                     }
                 }
