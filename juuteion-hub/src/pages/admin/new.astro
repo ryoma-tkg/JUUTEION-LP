@@ -2,7 +2,6 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import Input from "../../components/ui/Input.astro";
 
-// --- Style Definitions ---
 const STYLES = {
     sectionTitle: "text-xl font-bold text-white flex items-center gap-2",
     subTitle:
@@ -11,6 +10,8 @@ const STYLES = {
     select: "w-full bg-surface border border-subtle rounded-2xl px-5 py-4 text-base text-text-main focus:outline-none focus:border-accent-blue transition-colors cursor-pointer appearance-none",
     inputBase:
         "bg-surface border border-subtle rounded-xl px-4 py-3 text-sm text-text-main placeholder:text-text-muted/30 focus:outline-none focus:border-accent-blue transition-colors",
+    timeInput:
+        "bg-surface border border-subtle rounded-xl px-2 py-3 text-sm text-text-main focus:outline-none focus:border-accent-blue transition-colors text-center w-full",
     dropzone: {
         base: "relative w-full bg-surface border-2 border-dashed border-subtle rounded-2xl overflow-hidden transition-colors group cursor-pointer",
         main: "aspect-[3/4] hover:border-accent-blue",
@@ -85,21 +86,45 @@ const STYLES = {
                             </div>
                         </div>
                         <div class="space-y-2">
-                            <label class={STYLES.label}>Open Time</label>
-                            <div class="flex gap-2">
-                                <select
-                                    id="time-prefix"
-                                    class:list={[STYLES.select, "w-1/3"]}
-                                >
-                                    <option value="OPEN">OPEN</option>
-                                    <option value="START">START</option>
-                                </select>
-                                <input
-                                    type="time"
-                                    id="time-value"
-                                    class:list={[STYLES.select, "w-2/3"]}
-                                    required
-                                />
+                            <label class={STYLES.label}>Event Time</label>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1 space-y-1">
+                                    <span
+                                        class="text-[10px] text-zinc-500 font-mono pl-1"
+                                        >OPEN</span
+                                    >
+                                    <div class="flex gap-2">
+                                        <select
+                                            id="time-prefix"
+                                            class:list={[
+                                                STYLES.select,
+                                                "w-20 px-1 text-center",
+                                            ]}
+                                        >
+                                            <option value="OPEN">OPEN</option>
+                                            <option value="START">START</option>
+                                        </select>
+                                        <input
+                                            type="time"
+                                            id="time-value"
+                                            class={STYLES.timeInput}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <span class="text-zinc-600 mt-5">〜</span>
+                                <div class="flex-1 space-y-1">
+                                    <span
+                                        class="text-[10px] text-zinc-500 font-mono pl-1"
+                                        >CLOSE</span
+                                    >
+                                    <input
+                                        type="time"
+                                        name="closeTime"
+                                        id="input-closeTime"
+                                        class={STYLES.timeInput}
+                                    />
+                                </div>
                             </div>
                             <input type="hidden" name="time" id="time-hidden" />
                         </div>
@@ -160,12 +185,12 @@ const STYLES = {
                     <div class="space-y-4">
                         <div class="space-y-2">
                             <label class={STYLES.label}
-                                >Reservation Deadline</label
+                                >Reservation Deadline (Global)</label
                             >
                             <input
                                 type="datetime-local"
                                 name="ticketDeadline"
-                                class={STYLES.inputBase}
+                                class={`${STYLES.inputBase} w-full`}
                             />
                         </div>
                     </div>
@@ -178,6 +203,9 @@ const STYLES = {
                     <span class="w-1 h-6 bg-accent-red rounded-sm"
                     ></span>画像設定
                 </h3>
+                <p class="text-xs text-zinc-500">
+                    ※画像を設定しない場合は、デフォルトの黒背景・ロゴ表示になります。
+                </p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-2">
                         <label class={STYLES.label}>Main Visual (詳細用)</label>
@@ -301,7 +329,6 @@ const STYLES = {
         </form>
     </div>
 
-    {/* Templates */}
     <template id="tmpl-tt-row">
         <div class="flex gap-2 items-center group row-tt">
             <input
@@ -336,11 +363,24 @@ const STYLES = {
                 class:list={[STYLES.inputBase, "w-28 hidden input-late-time"]}
             />
             <input
-                type="text"
-                class:list={[STYLES.inputBase, "flex-1 input-price"]}
-                placeholder="¥2,500"
-                required
+                type="datetime-local"
+                class:list={[
+                    STYLES.inputBase,
+                    "w-48 hidden input-twipla-deadline text-xs",
+                ]}
             />
+            <div class="relative flex-1">
+                <span
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-mono"
+                    >¥</span
+                >
+                <input
+                    type="text"
+                    class:list={[STYLES.inputBase, "w-full pl-8 input-price"]}
+                    placeholder="2,500"
+                    required
+                />
+            </div>
             <button type="button" class={`${STYLES.removeBtn} btn-remove`}
                 >×</button
             >
@@ -356,16 +396,12 @@ const STYLES = {
         } from "firebase/firestore";
         import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-        // View Transitions対応
         const initPage = () => {
             const form = document.getElementById(
                 "event-form",
             ) as HTMLFormElement;
             if (!form) return;
 
-            console.log("🚀 New Event Page Initialized");
-
-            // UI Elements
             const timePrefix = document.getElementById(
                 "time-prefix",
             ) as HTMLSelectElement;
@@ -384,7 +420,6 @@ const STYLES = {
                 "tmpl-price-row",
             ) as HTMLTemplateElement;
 
-            // Row Helper
             const addRow = (
                 container: HTMLElement | null,
                 template: HTMLTemplateElement | null,
@@ -398,20 +433,29 @@ const STYLES = {
                     ?.addEventListener("click", (e) => {
                         (e.target as HTMLElement).closest(".flex")?.remove();
                     });
+
                 const typeSelect = clone.querySelector(
                     ".input-type",
                 ) as HTMLSelectElement;
                 const lateTimeInput = clone.querySelector(
                     ".input-late-time",
                 ) as HTMLInputElement;
-                if (typeSelect && lateTimeInput) {
+                const twiplaDeadline = clone.querySelector(
+                    ".input-twipla-deadline",
+                ) as HTMLInputElement;
+
+                if (typeSelect) {
                     typeSelect.addEventListener("change", () => {
+                        lateTimeInput.classList.add("hidden");
+                        twiplaDeadline.classList.add("hidden");
+                        lateTimeInput.required = false;
+
                         if (typeSelect.value === "LATE DISCOUNT") {
                             lateTimeInput.classList.remove("hidden");
                             lateTimeInput.required = true;
+                        } else if (typeSelect.value === "TwiPla") {
+                            twiplaDeadline.classList.remove("hidden");
                         } else {
-                            lateTimeInput.classList.add("hidden");
-                            lateTimeInput.required = false;
                             lateTimeInput.value = "";
                         }
                     });
@@ -419,7 +463,6 @@ const STYLES = {
                 container.appendChild(clone);
             };
 
-            // Buttons: cloneせず直接登録
             document
                 .getElementById("add-tt-btn")
                 ?.addEventListener("click", () => addRow(ttContainer, tmplTt));
@@ -429,13 +472,11 @@ const STYLES = {
                     addRow(priceContainer, tmplPrice),
                 );
 
-            // Init rows
             if (ttContainer && ttContainer.children.length === 0)
                 addRow(ttContainer, tmplTt);
             if (priceContainer && priceContainer.children.length === 0)
                 addRow(priceContainer, tmplPrice);
 
-            // Image Logic
             const processImage = async (file: File): Promise<Blob> => {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -478,9 +519,7 @@ const STYLES = {
                 const img = document.getElementById(imgId) as HTMLImageElement;
                 const placeholder = document.getElementById(placeholderId);
                 let selectedFile: File | null = null;
-
                 if (!input || !dropZone) return () => null;
-
                 const handleFile = (file: File) => {
                     selectedFile = file;
                     const reader = new FileReader();
@@ -491,10 +530,7 @@ const STYLES = {
                     };
                     reader.readAsDataURL(file);
                 };
-
-                // シンプルにクリックイベント登録
                 dropZone.onclick = () => input.click();
-
                 dropZone.ondragover = (e) => {
                     e.preventDefault();
                     dropZone.classList.add("border-accent-blue");
@@ -526,7 +562,6 @@ const STYLES = {
                 "preview-thumb-placeholder",
             );
 
-            // Markdown Logic
             const generateMarkdown = () => {
                 const intro = (
                     document.getElementById("body-intro") as HTMLInputElement
@@ -573,11 +608,33 @@ const STYLES = {
                         const lateTimeEl = row.querySelector(
                             ".input-late-time",
                         ) as HTMLInputElement;
+                        const twiplaEl = row.querySelector(
+                            ".input-twipla-deadline",
+                        ) as HTMLInputElement;
+
                         if (priceEl.value) {
                             let label = typeEl.value;
-                            if (label === "LATE DISCOUNT" && lateTimeEl.value)
+                            if (label === "LATE DISCOUNT" && lateTimeEl.value) {
                                 label += ` (${lateTimeEl.value}~)`;
-                            sectionMd += `| ${label} | ${priceEl.value} |\n`;
+                            }
+                            if (label === "TwiPla" && twiplaEl.value) {
+                                const d = new Date(twiplaEl.value);
+                                const mon = d.getMonth() + 1;
+                                const day = d.getDate();
+                                const hh = String(d.getHours()).padStart(
+                                    2,
+                                    "0",
+                                );
+                                const mm = String(d.getMinutes()).padStart(
+                                    2,
+                                    "0",
+                                );
+                                label += ` (〆${mon}/${day} ${hh}:${mm})`;
+                            }
+                            const priceVal = priceEl.value
+                                .replace("¥", "")
+                                .replace("￥", "");
+                            sectionMd += `| ${label} | ¥${priceVal} |\n`;
                             hasContent = true;
                         }
                     });
@@ -588,19 +645,9 @@ const STYLES = {
                 return md;
             };
 
-            // Submit Handler
             form.addEventListener("submit", async (e) => {
-                e.preventDefault(); // ここでストップ
-
-                const mainFile = getMainFile();
-                const thumbFile = getThumbFile();
-                if (!mainFile || !thumbFile) {
-                    alert("画像(Main/Thumbnail)は両方必須です");
-                    return;
-                }
-
+                e.preventDefault();
                 if (!confirm("この内容でイベントを保存しますか？")) return;
-
                 const submitBtn = document.getElementById(
                     "submit-btn",
                 ) as HTMLButtonElement;
@@ -619,7 +666,14 @@ const STYLES = {
                         ) as HTMLInputElement
                     ).value = generateMarkdown();
 
-                    const uploadImage = async (file: File, prefix: string) => {
+                    const mainFile = getMainFile();
+                    const thumbFile = getThumbFile();
+
+                    const uploadImage = async (
+                        file: File | null,
+                        prefix: string,
+                    ) => {
+                        if (!file) return "";
                         const blob = await processImage(file);
                         const filename = `${Date.now()}_${prefix}.webp`;
                         const storageRef = ref(storage, `events/${filename}`);
@@ -635,12 +689,12 @@ const STYLES = {
 
                     if (submitBtn) submitBtn.innerText = "SAVING...";
                     const formData = new FormData(form);
-
                     const eventData = {
                         title: formData.get("title"),
                         subTitle: formData.get("subTitle"),
                         date: new Date(formData.get("date") as string),
                         time: formData.get("time"),
+                        closeTime: formData.get("closeTime"), // ★追加
                         place: formData.get("place"),
                         address: formData.get("address"),
                         mapEmbed: formData.get("mapEmbed"),
@@ -670,8 +724,6 @@ const STYLES = {
                 }
             });
         };
-
-        // 実行
         document.addEventListener("astro:page-load", initPage);
     </script>
 </AdminLayout>

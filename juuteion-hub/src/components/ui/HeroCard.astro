@@ -9,15 +9,24 @@ interface Props {
     time: string;
     place: string;
     price: string;
-    // ▼ 修正: 文字列(URL)も許容する
     image: ImageMetadata | string;
     href?: string;
+    mode?: "normal" | "compact";
 }
 
-const { title, subTitle, date, time, place, price, image, href } = Astro.props;
+const {
+    title,
+    subTitle,
+    date,
+    time,
+    place,
+    price,
+    image,
+    href,
+    mode = "normal",
+} = Astro.props;
 const Tag = href ? "a" : "div";
 
-// ▼ 修正: 画像がオブジェクト(ローカル)なら最適化し、文字列(リモートURL)ならそのまま使う
 let bgUrl = "";
 if (typeof image === "string") {
     bgUrl = image;
@@ -29,94 +38,190 @@ if (typeof image === "string") {
     });
     bgUrl = optimized.src;
 }
+
+const isCompact = mode === "compact";
 ---
 
 <Tag href={href} class="block w-full relative group cursor-pointer">
     {/* Glow Effect */}
     <div
-        class="absolute -inset-0.5 bg-gradient-to-br from-accent-blue via-accent-yellow to-accent-red rounded-[34px] opacity-30 blur-lg group-hover:opacity-60 transition duration-500"
+        class:list={[
+            "absolute -inset-0.5 bg-gradient-to-br from-accent-blue via-accent-yellow to-accent-red opacity-30 blur-lg group-hover:opacity-60 transition duration-500",
+            isCompact ? "rounded-2xl" : "rounded-[34px]",
+        ]}
     >
     </div>
 
     <div
-        class="relative w-full bg-surface rounded-[32px] overflow-hidden border border-white/5 shadow-2xl"
+        class:list={[
+            "relative w-full bg-surface border border-white/5 shadow-2xl overflow-hidden transition-all",
+            // Compact: 高さを固定して横並び
+            isCompact
+                ? "rounded-xl flex flex-row h-48"
+                : "rounded-[32px] flex flex-col",
+        ]}
     >
         {/* Image Area */}
-        <div class="relative h-64 w-full bg-zinc-800 overflow-hidden">
+        <div
+            class:list={[
+                "relative bg-zinc-800 overflow-hidden shrink-0",
+                // Compact: 画像幅を40%確保し、KVをしっかり見せる
+                isCompact ? "w-2/5" : "h-64 w-full",
+            ]}
+        >
             <div
                 class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                 style={`background-image: url('${bgUrl}')`}
             >
             </div>
             <div
-                class="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent"
+                class:list={[
+                    "absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent",
+                    isCompact ? "opacity-10" : "",
+                ]}
             >
             </div>
         </div>
 
         {/* Content Area */}
-        <div class="relative p-6 -mt-12 space-y-5">
-            <div>
+        <div
+            class:list={[
+                "relative flex-1 min-w-0 flex flex-col",
+                isCompact ? "p-5 justify-center" : "p-6 -mt-12 space-y-5",
+            ]}
+        >
+            <div class={isCompact ? "space-y-2" : ""}>
                 {/* Title & SubTitle */}
                 <h3
-                    class="flex flex-wrap items-baseline gap-x-3 text-3xl font-bold text-white tracking-tighter leading-none mb-3 drop-shadow-md font-en"
+                    class:list={[
+                        "flex flex-wrap items-baseline font-bold text-white tracking-tighter leading-none font-en drop-shadow-md",
+                        // Compact: タイトルサイズを調整
+                        isCompact
+                            ? "flex-col gap-y-1 mb-1"
+                            : "text-3xl gap-x-3 mb-3",
+                    ]}
                 >
-                    <span>{title}</span>
+                    <span class={isCompact ? "text-2xl" : ""}>{title}</span>
                     <span
-                        class="text-xl text-zinc-500 font-bold tracking-normal"
-                        >{subTitle}</span
+                        class:list={[
+                            "text-zinc-500 font-bold tracking-normal",
+                            isCompact ? "text-sm" : "text-xl",
+                        ]}>{subTitle}</span
                     >
                 </h3>
 
-                <div
-                    class="flex items-center gap-4 text-sm font-bold text-zinc-400 font-en"
-                >
-                    <span class="flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-accent-red"
-                        ></span>
-                        {date}
-                    </span>
-                    <span class="w-px h-3 bg-white/10"></span>
-                    <span>{time}</span>
-                    <span class="w-px h-3 bg-white/10"></span>
-                    <span
-                        ><span class="text-zinc-400 font-en mt-1">@</span>
-                        {place}</span
-                    >
-                </div>
-            </div>
+                {/* Meta Info */}
+                {/* Normal Mode */}
+                {
+                    !isCompact && (
+                        <div class="flex items-center gap-4 text-sm font-bold text-zinc-400 font-en">
+                            <span class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-accent-red" />
+                                {date}
+                            </span>
+                            <span class="w-px h-3 bg-white/10" />
+                            <span>{time}</span>
+                            <span class="w-px h-3 bg-white/10" />
+                            <span>
+                                <span class="text-zinc-400 font-en mt-1">
+                                    @
+                                </span>{" "}
+                                {place}
+                            </span>
+                        </div>
+                    )
+                }
 
-            <div class="h-px w-full bg-white/5"></div>
+                {/* Compact Mode (整理されたメタ情報) */}
+                {
+                    isCompact && (
+                        <div class="space-y-1.5 pt-1">
+                            <div class="flex items-center gap-2 text-xs font-bold text-zinc-300 font-en">
+                                <span class="w-1.5 h-1.5 rounded-full bg-accent-red shrink-0" />
+                                <span>{date}</span>
+                                <span class="text-zinc-600">/</span>
+                                <span>{time}</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-zinc-500 font-en truncate">
+                                <span class="truncate">@ {place}</span>
+                            </div>
+                        </div>
+                    )
+                }
+            </div>
 
             {/* Footer / CTA */}
-            <div class="flex items-center justify-between pt-1">
-                <div>
-                    <p
-                        class="text-xs text-text-muted uppercase tracking-widest mb-1 font-en"
-                    >
-                        Entrance
-                    </p>
-                    <p class="text-xl font-bold text-white font-en">{price}</p>
-                </div>
-                <div
-                    class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center group-hover:bg-accent-yellow transition-colors duration-300"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M5 12h14"></path><path d="m12 5 7 7-7 7"
-                        ></path>
-                    </svg>
-                </div>
-            </div>
+            {/* Normal Mode */}
+            {
+                !isCompact && (
+                    <>
+                        <div class="h-px w-full bg-white/5" />
+                        <div class="flex items-center justify-between pt-1">
+                            <div>
+                                <p class="text-xs text-text-muted uppercase tracking-widest mb-1 font-en">
+                                    Entrance
+                                </p>
+                                <p class="text-xl font-bold text-white font-en">
+                                    {price}
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center group-hover:bg-accent-yellow transition-colors duration-300">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <>
+                                        <path d="M5 12h14" />
+                                        <path d="m12 5 7 7-7 7" />
+                                    </>
+                                </svg>
+                            </div>
+                        </div>
+                    </>
+                )
+            }
+
+            {/* Compact Mode Footer (Bottom Aligned) */}
+            {
+                isCompact && (
+                    <div class="flex items-end justify-between mt-auto pt-3 border-t border-white/5">
+                        <div>
+                            <p class="text-[10px] text-zinc-600 uppercase tracking-widest font-en leading-none mb-1">
+                                Door
+                            </p>
+                            <p class="text-sm font-bold text-white font-en leading-none">
+                                {price}
+                            </p>
+                        </div>
+                        {/* Icon */}
+                        <div class="w-8 h-8 rounded-full bg-white/5 text-zinc-400 flex items-center justify-center group-hover:bg-accent-yellow group-hover:text-black transition-colors duration-300">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <>
+                                    <path d="M5 12h14" />
+                                    <path d="m12 5 7 7-7 7" />
+                                </>
+                            </svg>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     </div>
 </Tag>

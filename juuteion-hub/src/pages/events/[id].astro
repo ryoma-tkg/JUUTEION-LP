@@ -5,18 +5,23 @@ import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
 import logo from "../../assets/logo/jto_logo.svg";
 
-// ▼ Firestore & Markdown Parser
+// ▼ Firebase & Markdown
+// 階層が深いため ../../ で遡ります
 import { db } from "../../lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { marked } from "marked";
 
-// ▼ 型定義 (TypeScriptエラー回避のため)
+// ▼ 共通ロジックのインポート
+import { getEventStatus } from "../../lib/utils/eventStatus";
+
+// 型定義
 interface EventData {
     id: string;
     title: string;
     subTitle?: string;
     date: Date;
     time: string;
+    closeTime?: string;
     place: string;
     price: string;
     mainVisual: string;
@@ -24,7 +29,6 @@ interface EventData {
     body?: string;
     mapEmbed?: string;
     address?: string;
-    // ▼ 追加: 予約関連
     ticketLink?: string;
     ticketDeadline?: Date;
 }
@@ -33,10 +37,9 @@ interface Props {
     event: EventData;
 }
 
-// 1. ビルド時に全イベントのパス（URL）を生成
+// 1. Static Paths
 export async function getStaticPaths() {
     const snapshot = await getDocs(collection(db, "events"));
-
     return snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
@@ -44,24 +47,11 @@ export async function getStaticPaths() {
             props: {
                 event: {
                     id: doc.id,
-                    title: data.title,
-                    subTitle: data.subTitle,
-                    time: data.time,
-                    place: data.place,
-                    price: data.price,
-                    mainVisual: data.mainVisual,
-                    status: data.status,
-                    body: data.body,
-                    mapEmbed: data.mapEmbed,
-                    address: data.address,
-
-                    // TimestampをDate型に変換
+                    ...data,
+                    // Timestamp -> Date
                     date: data.date?.toDate
                         ? data.date.toDate()
                         : new Date(data.date),
-
-                    // ▼ 追加: 予約関連データのマッピング
-                    ticketLink: data.ticketLink,
                     ticketDeadline: data.ticketDeadline?.toDate
                         ? data.ticketDeadline.toDate()
                         : data.ticketDeadline
@@ -73,10 +63,7 @@ export async function getStaticPaths() {
     });
 }
 
-// 2. ページ生成処理
 const { event } = Astro.props;
-
-// MarkdownをHTMLに変換
 const contentHtml = await marked.parse(event.body || "");
 
 // 日付フォーマット
@@ -90,39 +77,24 @@ const formatDate = (date: Date) => {
     return `${y}.${m}.${d} ${day}`;
 };
 
-// ステータス判定
-const getEventStatus = (evt: EventData) => {
-    if (evt.status === "soldout")
-        return { label: "SOLD OUT", color: "default", isActive: false };
-    if (evt.status === "open")
-        return { label: "NOW OPEN", color: "red", isActive: true };
-    if (evt.status === "archive")
-        return { label: "ARCHIVE", color: "default", isActive: false };
+// ステータス判定 (共通ロジックを使用)
+// closeTimeがあれば、日付またぎも考慮して正確に判定されます
+const statusData = getEventStatus(
+    event.date,
+    event.time,
+    event.closeTime,
+    event.status,
+);
 
-    // UPCOMINGの場合の日付判定
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(evt.date);
-    target.setHours(0, 0, 0, 0);
-
-    if (target.getTime() === today.getTime()) {
-        return { label: "NOW OPEN", color: "red", isActive: true };
-    } else if (target > today) {
-        return { label: "COMING SOON", color: "yellow", isActive: true };
-    } else {
-        return { label: "ARCHIVE", color: "default", isActive: false };
-    }
-};
-
-const status = getEventStatus(event);
-
-// ▼ 締切判定ロジック
+// 予約可能かどうかの判定
 const now = new Date();
 const isDeadlinePassed = event.ticketDeadline
     ? now > event.ticketDeadline
     : false;
-// 予約可能 = リンクがある AND 締切を過ぎていない
 const canReserve = event.ticketLink && !isDeadlinePassed;
+
+// 開発環境フラグ
+const isDev = import.meta.env.DEV;
 ---
 
 <Layout title={event.title} isFluid={true}>
@@ -141,14 +113,11 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                 >
                 </div>
             </div>
-            {/* Logo Area */}
             <div class="relative z-10 text-center select-none opacity-80">
                 <img
                     src={logo.src}
                     alt="JUUTEION"
                     class="mx-auto w-48 h-auto"
-                    width="192"
-                    height="192"
                 />
             </div>
         </aside>
@@ -179,7 +148,6 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                     >
                     <span class="font-bold text-sm font-en">BACK</span>
                 </a>
-
                 <div
                     class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                 >
@@ -195,17 +163,39 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
             <div
                 class="relative w-full bg-zinc-900 group border-b border-subtle overflow-hidden"
             >
-                {/* Main Visual (URL string) */}
-                <img
-                    src={event.mainVisual}
-                    alt={event.title}
-                    class="w-full h-auto block"
-                />
+                {/* Image or Fallback */}
+                {
+                    event.mainVisual ? (
+                        <img
+                            src={event.mainVisual}
+                            alt={event.title}
+                            class="w-full h-auto block"
+                        />
+                    ) : (
+                        <div class="w-full aspect-[4/5] lg:aspect-[16/10] bg-zinc-950 flex items-center justify-center relative overflow-hidden">
+                            <img src={logo.src} class="w-1/3 opacity-20" />
+                        </div>
+                    )
+                }
 
                 <div
                     class="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-background via-background/80 to-transparent"
                 >
                 </div>
+
+                {/* Edit Button (Dev Only) */}
+                {
+                    isDev && (
+                        <div class="absolute top-4 right-4 z-50">
+                            <a
+                                href={`/admin/edit?id=${event.id}`}
+                                class="text-[10px] bg-white text-black font-bold px-3 py-1.5 rounded-full shadow-lg hover:bg-zinc-200 transition-colors"
+                            >
+                                ✎ EDIT
+                            </a>
+                        </div>
+                    )
+                }
 
                 <div
                     class="absolute bottom-0 left-0 w-full p-8 md:p-12 flex flex-col justify-end z-20"
@@ -216,26 +206,21 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                         >
                             <span
                                 class="text-5xl lg:text-6xl text-white drop-shadow-2xl"
+                                >{event.title}</span
                             >
-                                {event.title}
-                            </span>
                             <span
                                 class="text-2xl lg:text-3xl text-zinc-500 font-normal tracking-normal pb-1"
+                                >{event.subTitle}</span
                             >
-                                {event.subTitle}
-                            </span>
                         </h1>
-
                         <div
                             class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-bold text-white tracking-widest font-en pt-2"
                         >
                             <div class="flex items-center gap-2">
                                 <Tag
-                                    variant={status.color as any}
-                                    class="font-en"
+                                    variant={statusData.color as any}
+                                    class="font-en">{statusData.label}</Tag
                                 >
-                                    {status.label}
-                                </Tag>
                             </div>
                         </div>
                     </div>
@@ -380,7 +365,9 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
 
                 {/* Markdown Body */}
                 <div
+                    id="event-body"
                     class="prose prose-invert prose-sm md:prose-base max-w-none"
+                    data-event-date={event.date.toISOString()}
                 >
                     <Fragment set:html={contentHtml} />
                 </div>
@@ -419,7 +406,7 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                                         )}
                                     </div>
                                     <a
-                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place + " " + (event.address || ""))}`}
+                                        href={`http://maps.google.com/?q=${encodeURIComponent(event.place + " " + (event.address || ""))}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="text-xs font-bold font-en text-accent-blue hover:text-white transition-colors border-b border-accent-blue/30 pb-0.5"
@@ -431,13 +418,95 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                         </section>
                     )
                 }
+
+                {/* JOIN THE FLOOR (Clone from Index) */}
+                <section
+                    id="social-bottom"
+                    class="space-y-10 pt-10 border-t border-subtle"
+                >
+                    <SectionHeader
+                        title="Join the Floor"
+                        accentColor="subtle"
+                        titleClass="text-white"
+                    />
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* X Link */}
+                        <a
+                            href="#"
+                            class="group bg-surface border border-subtle hover:border-accent-blue/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-blue/30"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                        ><path
+                                            d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                                        ></path></svg
+                                    >
+                                </div>
+                                <div>
+                                    <p
+                                        class="text-base font-bold text-text-main font-en tracking-wide"
+                                    >
+                                        Official X
+                                    </p>
+                                    <p
+                                        class="text-xs text-text-muted mt-0.5 font-en"
+                                    >
+                                        Latest Information
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class="text-xs text-subtle group-hover:text-accent-blue transition-colors font-en"
+                                >VIEW →</span
+                            >
+                        </a>
+                        {/* VRC Link */}
+                        <a
+                            href="#"
+                            class="group bg-surface border border-subtle hover:border-accent-yellow/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-yellow/30"
+                                >
+                                    <span class="font-bold text-xs font-en"
+                                        >VRC</span
+                                    >
+                                </div>
+                                <div>
+                                    <p
+                                        class="text-base font-bold text-text-main font-en tracking-wide"
+                                    >
+                                        VRChat Group
+                                    </p>
+                                    <p
+                                        class="text-xs text-text-muted mt-0.5 font-en"
+                                    >
+                                        Join the virtual venue
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class="text-xs text-subtle group-hover:text-accent-yellow transition-colors font-en"
+                                >JOIN →</span
+                            >
+                        </a>
+                    </div>
+                </section>
             </div>
 
             {/* Footer Sticky Button */}
+            {/* ライブ中(isLive=true) かつ チケットリンクがある場合のみ表示 */}
             {
-                // status.isActive (イベント自体が終わっていない) かつ
-                // ticketLinkが設定されている場合のみ表示
-                status.isActive && event.ticketLink && (
+                statusData.isLive && event.ticketLink && (
                     <div class="sticky bottom-0 left-0 right-0 z-50 p-6 pb-8 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
                         <div class="w-full pointer-events-auto">
                             {canReserve ? (
@@ -447,7 +516,6 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
                                     class="shadow-2xl shadow-accent-blue/20 w-full"
                                 >
                                     TwiPlaで参加表明する
-                                    {/* 締切日時があれば表示 */}
                                     {event.ticketDeadline && (
                                         <span class="text-[10px] ml-2 opacity-70 font-normal">
                                             (〆{" "}
@@ -481,71 +549,47 @@ const canReserve = event.ticketLink && !isDeadlinePassed;
     </div>
 </Layout>
 
-<style is:global>
-    /* Markdown Styles (Previous styles preserved) */
-    .prose h2 {
-        @apply text-xl font-bold text-white mt-20 mb-8 font-en uppercase tracking-widest flex items-center gap-4;
-    }
-    .prose h2::before {
-        content: "";
-        @apply block w-2 h-8 bg-text-muted rounded-sm;
-    }
-    .prose h3 {
-        @apply text-lg font-bold text-zinc-200 mt-12 mb-4 font-sans border-b border-subtle pb-2 inline-block pr-8;
-    }
-    .prose p {
-        @apply text-zinc-400 leading-relaxed mb-6 font-sans text-base;
-    }
-    .prose ul {
-        @apply list-none pl-0 space-y-0 my-8 ml-2 relative;
-        border-left: none;
-    }
-    .prose ul li {
-        @apply pl-0 py-4 relative flex items-baseline font-bold;
-    }
-    .prose ul li::after {
-        content: "";
-        @apply absolute left-[3px] w-[1px] bg-timeline;
-        top: 0;
-        height: 100%;
-        z-index: 0;
-    }
-    .prose ul li:first-child::after {
-        @apply top-6;
-        height: calc(100% - 1.5rem);
-    }
-    .prose ul li:last-child::after {
-        top: 0;
-        @apply h-6;
-    }
-    .prose ul li::before {
-        content: "";
-        @apply absolute left-0 top-6 w-2 h-2 rounded-full bg-timeline ring-4 ring-zinc-950 transition-colors duration-300 z-10;
-    }
-    .prose ul li:hover::before {
-        @apply bg-accent-blue;
-    }
-    .prose ul li strong {
-        @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right;
-    }
-    /* Table Styles for Price List */
-    .prose table {
-        @apply w-full border-separate border-spacing-0 my-8 rounded-xl border border-zinc-700 overflow-hidden bg-surface;
-    }
-    .prose thead tr {
-        @apply bg-zinc-800/50;
-    }
-    .prose th {
-        @apply p-4 text-left font-bold border-b border-zinc-700 text-xs text-zinc-400 font-en tracking-widest uppercase;
-    }
-    .prose td {
-        @apply p-4 border-b border-zinc-700/50 text-zinc-300 text-sm font-en;
-    }
-    .prose tr:last-child td {
-        @apply border-b-0;
-    }
-    .prose td:not(:first-child),
-    .prose th:not(:first-child) {
-        @apply text-right;
-    }
-</style>
+<script>
+    // タイムテーブルの現在地ハイライト
+    document.addEventListener("astro:page-load", () => {
+        const body = document.getElementById("event-body");
+        if (!body) return;
+
+        const eventDateStr = body.getAttribute("data-event-date");
+        if (!eventDateStr) return;
+
+        const eventDate = new Date(eventDateStr);
+        const now = new Date();
+
+        // 簡易判定: 年月日が同じなら「当日」とみなす
+        const isSameDay =
+            eventDate.getFullYear() === now.getFullYear() &&
+            eventDate.getMonth() === now.getMonth() &&
+            eventDate.getDate() === now.getDate();
+
+        if (!isSameDay) return;
+
+        // Markdownで生成されたリストアイテムを取得
+        const items = body.querySelectorAll("ul li");
+
+        let currentItem: HTMLElement | null = null;
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        items.forEach((item) => {
+            // **HH:MM** の部分を取得
+            const timeStr = item.querySelector("strong")?.innerText;
+            if (timeStr) {
+                const [h, m] = timeStr.split(":").map(Number);
+                const itemMinutes = h * 60 + m;
+                // 現在時刻より前の項目の中で、最も遅いものをCurrentとする
+                if (itemMinutes <= currentMinutes) {
+                    currentItem = item as HTMLElement;
+                }
+            }
+        });
+
+        if (currentItem) {
+            (currentItem as HTMLElement).classList.add("active");
+        }
+    });
+</script>
