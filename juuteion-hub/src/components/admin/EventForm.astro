@@ -9,6 +9,7 @@ interface Props {
 const { mode, eventId } = Astro.props;
 const title = mode === "new" ? "New Event" : "Edit Event";
 const submitLabel = mode === "new" ? "PUBLISH EVENT" : "UPDATE EVENT";
+
 // スタイル定義
 const STYLES = {
     section:
@@ -80,7 +81,7 @@ const STYLES = {
         id="event-form"
         class="space-y-6 opacity-0 transition-opacity duration-700 data-[loaded=true]:opacity-100"
     >
-        {/* 編集モード時のID保持用（表示用は別途inputで用意） */}
+        {/* 編集モード時のID保持用 */}
         <input type="hidden" id="original-id" value={eventId || ""} />
         <input type="hidden" id="form-mode" value={mode} />
 
@@ -114,7 +115,7 @@ const STYLES = {
                     </div>
 
                     <div class="space-y-6">
-                        {/* ▼ ここに追加: カスタムID入力欄 */}
+                        {/* カスタムID入力欄 */}
                         <div>
                             <Input
                                 label="Event ID (URL Slug)"
@@ -447,35 +448,93 @@ const STYLES = {
                         </div>
 
                         {/* Thumbnail */}
-                        <div class="space-y-2">
-                            <label class={STYLES.label}
-                                >THUMBNAIL (Square)</label
-                            >
-                            <div
-                                id="drop-thumb"
-                                class={`${STYLES.dropzone} aspect-square`}
-                                tabindex="0"
-                            >
-                                <input
-                                    type="file"
-                                    id="input-thumb"
-                                    accept="image/*"
-                                    class="hidden"
-                                />
-                                <input type="hidden" id="existing-thumb-url" />
-                                <div
-                                    id="preview-thumb-placeholder"
-                                    class="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 group-hover:text-zinc-400 transition-colors pointer-events-none"
+                        {/* ▼ 修正: グリッドを解除し、縦積みに戻しました */}
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <label class={STYLES.label}
+                                    >THUMBNAIL (Square)</label
                                 >
-                                    <span
-                                        class="text-[10px] font-bold tracking-widest"
-                                        >DRAG / PASTE</span
+                                <div
+                                    id="drop-thumb"
+                                    class={`${STYLES.dropzone} aspect-square`}
+                                    tabindex="0"
+                                >
+                                    <input
+                                        type="file"
+                                        id="input-thumb"
+                                        accept="image/*"
+                                        class="hidden"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        id="existing-thumb-url"
+                                    />
+                                    <div
+                                        id="preview-thumb-placeholder"
+                                        class="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 group-hover:text-zinc-400 transition-colors pointer-events-none"
                                     >
+                                        <span
+                                            class="text-[10px] font-bold tracking-widest"
+                                            >DRAG / PASTE</span
+                                        >
+                                    </div>
+                                    <img
+                                        id="preview-thumb-img"
+                                        class="absolute inset-0 w-full h-full object-cover hidden transition-opacity duration-300"
+                                    />
                                 </div>
-                                <img
-                                    id="preview-thumb-img"
-                                    class="absolute inset-0 w-full h-full object-cover hidden transition-opacity duration-300"
-                                />
+                            </div>
+
+                            {
+                                /* ▼ 修正: サムネイルの下に配置し、選択肢を変更しました */
+                            }
+                            <div class="space-y-2">
+                                <label
+                                    class="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2 font-en"
+                                >
+                                    Image Position (Vertical)
+                                </label>
+                                <div class="relative">
+                                    <select
+                                        id="input-imagePosition"
+                                        class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-3 text-xs text-zinc-100 focus:outline-none focus:border-accent-blue appearance-none cursor-pointer hover:bg-zinc-900"
+                                    >
+                                        <option value="center 0%"
+                                            >上 (Top)</option
+                                        >
+                                        <option value="center 25%"
+                                            >上中 (High)</option
+                                        >
+                                        <option value="center 50%"
+                                            >中 (Center)</option
+                                        >
+                                        <option value="center 75%"
+                                            >下中 (Low)</option
+                                        >
+                                        <option value="center 100%"
+                                            >下 (Bottom)</option
+                                        >
+                                    </select>
+                                    <div
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><path d="m6 9 6 6 6-6"></path></svg
+                                        >
+                                    </div>
+                                </div>
+                                <p class="text-[9px] text-zinc-600 mt-1">
+                                    ※サムネイルの表示範囲（上下）を調整します
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -709,7 +768,7 @@ const STYLES = {
         });
     };
 
-    // ▼ 修正: データ消失防止版 Markdown Parser
+    // ▼ データ消失防止版 Markdown Parser
     const parseMarkdown = (body: string) => {
         const lines = body.split("\n");
         let mode = "intro";
@@ -783,6 +842,7 @@ const STYLES = {
                 }
             }
         });
+
         autoExpand(introInput);
         autoExpand(notesInput);
     };
@@ -867,11 +927,13 @@ const STYLES = {
         if (!container) return;
         const tmpl = getEl(tmplId) as HTMLTemplateElement;
         const clone = tmpl.content.cloneNode(true) as DocumentFragment;
+
         clone
             .querySelector(".btn-remove")
             ?.addEventListener("click", (e) =>
                 (e.target as HTMLElement).closest(".group")?.remove(),
             );
+
         const typeSelect = clone.querySelector(
             ".input-type",
         ) as HTMLSelectElement;
@@ -1040,11 +1102,13 @@ const STYLES = {
                         data.status || "archive";
                     (getEl("input-mapEmbed") as HTMLInputElement).value =
                         data.mapEmbed || "";
+                    // ▼ 画像位置読み込み (デフォルト center 50%)
+                    (getEl("input-imagePosition") as HTMLSelectElement).value =
+                        data.imagePosition || "center 50%";
 
                     const d = data.date.toDate();
                     (getEl("input-date") as HTMLInputElement).value =
                         toJSTDateInputValue(d);
-
                     if (data.time) {
                         const parts = data.time.split(" ");
                         if (parts.length >= 2) {
@@ -1102,7 +1166,6 @@ const STYLES = {
 
                     // Markdownパース実行
                     if (data.body) parseMarkdown(data.body);
-
                     form.dataset.loaded = "true";
                     loading?.classList.add("opacity-0", "pointer-events-none");
                 }
@@ -1186,6 +1249,10 @@ const STYLES = {
                     place: formData.get("place"),
                     address: formData.get("address"),
                     mapEmbed: formData.get("mapEmbed"),
+                    // ▼ 画像位置情報保存
+                    imagePosition: (
+                        getEl("input-imagePosition") as HTMLSelectElement
+                    ).value,
                     price: formData.get("price"),
                     status: formData.get("status"),
                     body: formData.get("body"),

@@ -5,6 +5,7 @@ import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/700.css";
 import "../styles/global.css";
 import { ViewTransitions } from "astro:transitions";
+import { fade } from "astro:transitions";
 
 interface Props {
     title: string;
@@ -55,6 +56,11 @@ const ogImageUrl = new URL(image, siteUrl);
         <meta property="twitter:description" content={description} />
         <meta property="twitter:image" content={ogImageUrl} />
 
+        {
+            /* ▼▼▼ 追加: iOSのブラウザバー(アドレスバー)の色を背景色と合わせる ▼▼▼ */
+        }
+        <meta name="theme-color" content="#09090b" />
+
         <ViewTransitions />
     </head>
     <body
@@ -72,7 +78,9 @@ const ogImageUrl = new URL(image, siteUrl);
             </div>
         </div>
 
+        {/* ▼▼▼ 修正: transition:animate={fade(...)} を追加 ▼▼▼ */}
         <main
+            transition:animate={fade({ duration: "0.25s" })}
             class:list={[
                 "relative z-10 min-h-screen scrollbar-hide",
                 isFluid

@@ -13,6 +13,8 @@ interface Props {
     image: ImageMetadata | string | null | undefined;
     href?: string;
     mode?: "normal" | "compact";
+    // ▼ 追加: 画像の表示位置 (デフォルトは center)
+    imagePosition?: string;
 }
 
 const {
@@ -25,7 +27,10 @@ const {
     image,
     href,
     mode = "normal",
+    // ▼ 追加
+    imagePosition = "center",
 } = Astro.props;
+
 const Tag = href ? "a" : "div";
 
 let bgUrl = "";
@@ -98,11 +103,9 @@ const isCompact = mode === "compact";
             <div
                 class:list={[
                     "absolute inset-0 transition-transform duration-500 group-hover:scale-105",
-                    isLogo
-                        ? "bg-no-repeat bg-center opacity-30"
-                        : "bg-cover bg-center",
+                    isLogo ? "bg-no-repeat bg-center opacity-30" : "bg-cover",
                 ]}
-                style={`background-image: url('${bgUrl}'); ${isLogo ? "background-size: 50%;" : ""}`}
+                style={`background-image: url('${bgUrl}'); ${isLogo ? "background-size: 50%; background-position: center;" : `background-position: ${imagePosition};`}`}
             >
             </div>
 

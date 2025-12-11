@@ -7,6 +7,8 @@ import Tag from "../components/ui/Tag.astro";
 import SectionHeader from "../components/ui/SectionHeader.astro";
 import logo from "../assets/logo/jto_logo.svg";
 
+import { SOCIAL_LINKS } from "../config";
+
 import { db } from "../lib/firebase/client";
 import { collection, getDocs, query } from "firebase/firestore";
 import { getEventStatus, getEventDates } from "../lib/utils/eventStatus";
@@ -43,11 +45,13 @@ try {
 			endAt: end,
 		};
 	});
+
 	const now = new Date();
 
 	const activeEvents = allEvents
 		.filter((e) => now < e.endAt && e.status !== "archive")
 		.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+
 	const finishedEvents = allEvents
 		.filter((e) => now >= e.endAt || e.status === "archive")
 		.sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
@@ -63,6 +67,7 @@ try {
 			primary.closeTime,
 			primary.status,
 		);
+
 		heroEvent = { ...primary, statusObj: st };
 		if (st.label === "NOW OPEN") {
 			sectionTitle = "● NOW OPEN";
@@ -86,16 +91,14 @@ try {
 }
 
 const getBgStyle = (imgUrl: string) => {
-	// 画像がない場合はロゴを薄く表示するスタイルを返す
 	if (imgUrl) return `background-image: url('${imgUrl}')`;
-	return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%;
-background-repeat: no-repeat; background-position: center; opacity: 0.5;`;
+	return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%; background-repeat: no-repeat; background-position: center; opacity: 0.5;`;
 };
 
-// サムネイルを優先、なければメインビジュアル、それもなければnull
 const imageToUse = heroEvent
 	? heroEvent.thumbnail || heroEvent.mainVisual || null
 	: null;
+
 const heroData = heroEvent
 	? {
 			...heroEvent,
@@ -106,6 +109,7 @@ const heroData = heroEvent
 			isoStart: heroEvent.startAt?.toISOString(),
 			isoEnd: heroEvent.endAt?.toISOString(),
 			manualStatus: heroEvent.status,
+			imagePosition: heroEvent.imagePosition,
 		}
 	: null;
 
@@ -116,17 +120,18 @@ const isDev = import.meta.env.DEV;
 	{
 		heroData ? (
 			<>
-				{/* ... (Layout, aside, header, section#top は同じ) ... */}
 				<div class="flex flex-col lg:flex-row min-h-screen">
+					{/* PC Side Visual */}
 					<aside class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-black">
 						<div
-							class="absolute inset-0 bg-cover bg-center transition-all duration-700 hover:scale-105"
+							class="absolute inset-0 bg-cover bg-center"
 							style={heroData.bgStyle}
 						/>
-						<div class="absolute inset-0 bg-black/30" />
 					</aside>
 
+					{/* Main Content */}
 					<main class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle">
+						{/* SP Header */}
 						<header class="lg:hidden flex justify-center items-center p-4 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50 h-16">
 							<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
 								<img
@@ -137,6 +142,7 @@ const isDev = import.meta.env.DEV;
 							</div>
 						</header>
 
+						{/* Hero Section */}
 						<section
 							id="top"
 							class="relative w-full aspect-[4/5] lg:aspect-[16/10] overflow-hidden border-b border-subtle bg-surface group"
@@ -217,7 +223,7 @@ const isDev = import.meta.env.DEV;
 						</section>
 
 						<div class="w-full px-8 md:px-12 py-16 space-y-20">
-							{/* ... (section#about は同じ) ... */}
+							{/* About Section */}
 							<section id="about" class="space-y-8">
 								<SectionHeader
 									title="About Us"
@@ -241,6 +247,7 @@ const isDev = import.meta.env.DEV;
 								</div>
 							</section>
 
+							{/* Events Section */}
 							<section id="events" class="space-y-10">
 								<SectionHeader
 									title="Information"
@@ -254,7 +261,7 @@ const isDev = import.meta.env.DEV;
 										>
 											{sectionTitle}
 										</p>
-										{/* HeroCard: 画像がない場合は null が渡る */}
+										{/* HeroCard */}
 										<HeroCard
 											title={heroData.title}
 											subTitle={heroData.subTitle}
@@ -264,6 +271,9 @@ const isDev = import.meta.env.DEV;
 											price={heroData.price}
 											image={heroData.imageToUse}
 											href={heroData.href}
+											imagePosition={
+												heroData.imagePosition
+											}
 										/>
 									</div>
 
@@ -275,7 +285,6 @@ const isDev = import.meta.env.DEV;
 											</p>
 											<div class="grid gap-3 grid-cols-1">
 												{upcomingList.map((event) => (
-													// 画像がない場合は null を渡す
 													<HeroCard
 														mode="compact"
 														title={event.title}
@@ -294,6 +303,9 @@ const isDev = import.meta.env.DEV;
 															null
 														}
 														href={`/events/${event.id}`}
+														imagePosition={
+															event.imagePosition
+														}
 													/>
 												))}
 											</div>
@@ -308,7 +320,6 @@ const isDev = import.meta.env.DEV;
 											</p>
 											<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
 												{archiveList.map((event) => (
-													// 画像がない場合は null を渡す
 													<ArchiveCard
 														title={event.title}
 														subTitle={
@@ -332,15 +343,18 @@ const isDev = import.meta.env.DEV;
 								</div>
 							</section>
 
-							{/* ... (section#social, footer は同じ) ... */}
+							{/* Social Section */}
 							<section id="social" class="space-y-8">
 								<SectionHeader
 									title="Join the Floor"
 									accentColor="red"
 								/>
 								<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									{/* Official X */}
 									<a
-										href="#"
+										href={SOCIAL_LINKS.x}
+										target="_blank"
+										rel="noopener noreferrer"
 										class="group bg-surface border border-subtle hover:border-accent-blue/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
 									>
 										<div class="flex items-center gap-4">
@@ -370,8 +384,12 @@ const isDev = import.meta.env.DEV;
 											VIEW →
 										</span>
 									</a>
+
+									{/* Instagram */}
 									<a
-										href="#"
+										href={SOCIAL_LINKS.instagram}
+										target="_blank"
+										rel="noopener noreferrer"
 										class="group bg-surface border border-subtle hover:border-accent-red/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
 									>
 										<div class="flex items-center gap-4">
@@ -421,8 +439,12 @@ const isDev = import.meta.env.DEV;
 											VIEW →
 										</span>
 									</a>
+
+									{/* VRChat */}
 									<a
-										href="#"
+										href={SOCIAL_LINKS.vrcGroup}
+										target="_blank"
+										rel="noopener noreferrer"
 										class="sm:col-span-2 group bg-surface border border-subtle hover:border-accent-yellow/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
 									>
 										<div class="flex items-center gap-4">
@@ -460,7 +482,7 @@ const isDev = import.meta.env.DEV;
 			</>
 		) : (
 			<div class="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white p-4 text-center">
-				{/* ... (Empty state は同じ) ... */}
+				{/* Empty State */}
 				<img
 					src={logo.src}
 					alt="JUUTEION"
@@ -494,7 +516,8 @@ const isDev = import.meta.env.DEV;
 		const endStr = container.dataset.end;
 		const manual = container.dataset.manual;
 
-		if (!startStr || !endStr) return; // 日時情報がない場合はスキップ
+		if (!startStr || !endStr) return;
+		// 日時情報がない場合はスキップ
 
 		// 手動設定が "upcoming" 以外なら自動更新しない
 		if (manual && manual !== "upcoming") return;
