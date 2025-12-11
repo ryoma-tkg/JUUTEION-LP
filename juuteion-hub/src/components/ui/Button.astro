@@ -27,10 +27,16 @@ const variants = {
     secondary:
         "bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700",
 };
+
 const Tag = href ? "a" : "button";
 ---
 
-<Tag href={href} class:list={[baseStyles, variants[variant], className]}>
+{/* ▼▼▼ 修正: data-astro-prefetch を追加して先読みを強制 ▼▼▼ */}
+<Tag
+    href={href}
+    class:list={[baseStyles, variants[variant], className]}
+    data-astro-prefetch={href ? "tap" : undefined}
+>
     <slot />
     {
         icon && (
