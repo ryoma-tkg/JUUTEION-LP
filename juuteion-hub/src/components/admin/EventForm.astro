@@ -1,0 +1,1202 @@
+---
+import Input from "../ui/Input.astro";
+
+interface Props {
+    mode: "new" | "edit";
+    eventId?: string;
+}
+
+const { mode, eventId } = Astro.props;
+const title = mode === "new" ? "New Event" : "Edit Event";
+const submitLabel = mode === "new" ? "PUBLISH EVENT" : "UPDATE EVENT";
+
+// スタイル定義
+const STYLES = {
+    section:
+        "bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-6 backdrop-blur-sm relative overflow-hidden group/section transition-colors hover:border-zinc-700",
+    sectionHeader: "flex items-center gap-3 pb-4 border-b border-zinc-800 mb-2",
+    sectionTitle: "font-bold text-zinc-100 font-en tracking-wide text-sm",
+    sectionIcon:
+        "w-8 h-8 rounded-lg flex items-center justify-center border border-white/5 shadow-inner",
+    label: "text-[10px] text-zinc-500 font-bold uppercase tracking-widest block mb-2 font-en",
+    select: "w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-accent-blue transition-colors appearance-none cursor-pointer hover:bg-zinc-900",
+    helper: "text-[10px] text-zinc-600 mt-1 block font-mono",
+    dropzone:
+        "relative w-full bg-zinc-950 border-2 border-dashed border-zinc-800 rounded-xl overflow-hidden group cursor-pointer hover:border-accent-blue transition-all duration-300 active:scale-[0.99]",
+};
+---
+
+<div class="max-w-6xl mx-auto pb-40">
+    {/* Header */}
+    <div
+        class="flex items-center justify-between mb-8 sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-md py-6 border-b border-zinc-800"
+    >
+        <div>
+            <h1
+                class="text-3xl font-bold font-en tracking-tighter text-white flex items-center gap-3"
+            >
+                {title}
+            </h1>
+        </div>
+        <div class="flex gap-4">
+            <a
+                href="/admin"
+                class="px-5 py-2.5 rounded-xl text-xs font-bold text-zinc-500 hover:text-white hover:bg-zinc-900 transition-colors border border-transparent hover:border-zinc-800"
+            >
+                CANCEL
+            </a>
+            <button
+                type="submit"
+                form="event-form"
+                id="submit-btn"
+                class="bg-white text-black px-8 py-2.5 rounded-xl text-xs font-bold hover:bg-zinc-200 transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-white/5"
+            >
+                <span>{submitLabel}</span>
+            </button>
+        </div>
+    </div>
+
+    {/* Loading State */}
+    <div
+        id="loading-overlay"
+        class:list={[
+            "fixed inset-0 bg-zinc-950 z-50 flex items-center justify-center transition-opacity duration-500 pointer-events-none",
+            mode === "new" ? "hidden opacity-0" : "",
+        ]}
+    >
+        <div class="flex flex-col items-center gap-4">
+            <div
+                class="w-10 h-10 border-2 border-zinc-800 border-t-accent-blue rounded-full animate-spin"
+            >
+            </div>
+            <p
+                class="text-xs font-mono text-zinc-500 animate-pulse tracking-widest"
+            >
+                LOADING DATA...
+            </p>
+        </div>
+    </div>
+
+    <form
+        id="event-form"
+        class="space-y-6 opacity-0 transition-opacity duration-700 data-[loaded=true]:opacity-100"
+    >
+        {/* 編集モード時のID保持用（表示用は別途inputで用意） */}
+        <input type="hidden" id="original-id" value={eventId || ""} />
+        <input type="hidden" id="form-mode" value={mode} />
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* [LEFT COLUMN] Main Content (8/12) */}
+            <div class="lg:col-span-8 space-y-6">
+                {/* 1. Basic Info */}
+                <section class={STYLES.section}>
+                    <div class={STYLES.sectionHeader}>
+                        <div
+                            class={`${STYLES.sectionIcon} bg-accent-blue/10 text-accent-blue border-accent-blue/20`}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><path
+                                    d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"
+                                ></path><path
+                                    d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
+                                ></path></svg
+                            >
+                        </div>
+                        <h3 class={STYLES.sectionTitle}>BASIC INFO</h3>
+                    </div>
+
+                    <div class="space-y-6">
+                        {/* ▼ ここに追加: カスタムID入力欄 */}
+                        <div>
+                            <Input
+                                label="Event ID (URL Slug)"
+                                name="customId"
+                                id="input-customId"
+                                placeholder="例: juuteion-vol1 (空欄で自動生成)"
+                                class="font-mono text-accent-blue bg-accent-blue/5 border-accent-blue/20 focus:border-accent-blue"
+                                disabled={mode === "edit"}
+                            />
+                            {
+                                mode === "new" && (
+                                    <p class={STYLES.helper}>
+                                        ※半角英数字とハイフンのみ推奨。設定後の変更はできません。
+                                    </p>
+                                )
+                            }
+                        </div>
+
+                        <Input
+                            label="Event Title"
+                            name="title"
+                            id="input-title"
+                            placeholder="イベントタイトル (例: 獸酊音 Vol.1)"
+                            required
+                            class="text-lg font-bold"
+                        />
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Input
+                                label="Sub Title"
+                                name="subTitle"
+                                id="input-subTitle"
+                                placeholder="サブタイトル (例: Teaser Night)"
+                            />
+                            <div class="space-y-2">
+                                <label class={STYLES.label}>Status</label>
+                                <div class="relative group">
+                                    <select
+                                        name="status"
+                                        id="input-status"
+                                        class={STYLES.select}
+                                    >
+                                        <option value="upcoming"
+                                            >UPCOMING (公開・予定)</option
+                                        >
+                                        <option value="open"
+                                            >NOW OPEN (開催中)</option
+                                        >
+                                        <option value="soldout"
+                                            >SOLD OUT (完売)</option
+                                        >
+                                        <option value="archive"
+                                            >ARCHIVE (終了)</option
+                                        >
+                                    </select>
+                                    <div
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600 group-hover:text-white transition-colors"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="12"
+                                            height="12"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            ><path d="m6 9 6 6 6-6"></path></svg
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 2. Detail Content */}
+                <section class={STYLES.section}>
+                    <div class={STYLES.sectionHeader}>
+                        <div
+                            class={`${STYLES.sectionIcon} bg-zinc-800 text-zinc-400`}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><path
+                                    d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                                ></path><polyline points="14 2 14 8 20 8"
+                                ></polyline><line x1="16" x2="8" y1="13" y2="13"
+                                ></line><line x1="16" x2="8" y1="17" y2="17"
+                                ></line><line x1="10" x2="8" y1="9" y2="9"
+                                ></line></svg
+                            >
+                        </div>
+                        <h3 class={STYLES.sectionTitle}>CONTENT DETAILS</h3>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div>
+                            <Input
+                                label="Introduction"
+                                id="body-intro"
+                                multiline
+                                rows="3"
+                                class="font-mono text-sm leading-relaxed auto-expand min-h-[100px]"
+                                placeholder="イベントの紹介文を入力..."
+                            />
+                        </div>
+
+                        {/* Timetable Builder */}
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <label class={STYLES.label}>TIMETABLE</label>
+                                <button
+                                    type="button"
+                                    id="add-tt-btn"
+                                    class="text-[10px] bg-zinc-800 hover:bg-zinc-700 hover:text-white text-zinc-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                    <span>+ ADD ROW</span>
+                                </button>
+                            </div>
+                            <div
+                                id="tt-container"
+                                class="space-y-2 bg-zinc-950/30 p-2 rounded-xl border border-dashed border-zinc-800 min-h-[60px] empty:h-20 empty:flex empty:items-center empty:justify-center empty:after:content-['NO_DATA'] empty:after:text-zinc-700 empty:after:text-xs"
+                            >
+                            </div>
+                        </div>
+
+                        {/* Price List Builder */}
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <label class={STYLES.label}>ENTRANCE FEE</label>
+                                <button
+                                    type="button"
+                                    id="add-price-btn"
+                                    class="text-[10px] bg-zinc-800 hover:bg-zinc-700 hover:text-white text-zinc-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                    <span>+ ADD ROW</span>
+                                </button>
+                            </div>
+                            <div
+                                id="price-container"
+                                class="space-y-2 bg-zinc-950/30 p-2 rounded-xl border border-dashed border-zinc-800 min-h-[60px] empty:h-20 empty:flex empty:items-center empty:justify-center empty:after:content-['NO_DATA'] empty:after:text-zinc-700 empty:after:text-xs"
+                            >
+                            </div>
+                        </div>
+
+                        <div>
+                            <Input
+                                label="Attention / Notes"
+                                id="body-notes"
+                                multiline
+                                rows="3"
+                                class="font-mono text-sm leading-relaxed auto-expand min-h-[100px]"
+                                placeholder="注意事項を入力..."
+                            />
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            {/* [RIGHT COLUMN] Meta & Assets (4/12) */}
+            <div class="lg:col-span-4 space-y-6 sticky top-24">
+                {/* 3. Schedule & Place */}
+                <section class={STYLES.section}>
+                    <div class={STYLES.sectionHeader}>
+                        <div
+                            class={`${STYLES.sectionIcon} bg-accent-yellow/10 text-accent-yellow border-accent-yellow/20`}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><circle cx="12" cy="12" r="10"
+                                ></circle><polyline points="12 6 12 12 16 14"
+                                ></polyline></svg
+                            >
+                        </div>
+                        <h3 class={STYLES.sectionTitle}>SCHEDULE & PLACE</h3>
+                    </div>
+
+                    <div class="space-y-5">
+                        <Input
+                            label="Date"
+                            type="date"
+                            name="date"
+                            id="input-date"
+                            required
+                        />
+
+                        <div class="space-y-2">
+                            <label class={STYLES.label}>Time</label>
+                            <div class="flex items-center gap-2">
+                                <select
+                                    id="time-prefix"
+                                    class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-3 text-xs text-zinc-300 focus:border-accent-blue focus:text-white"
+                                >
+                                    <option value="OPEN">OPEN</option>
+                                    <option value="START">START</option>
+                                </select>
+                                <input
+                                    type="time"
+                                    id="time-value"
+                                    class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-3 text-sm text-center text-white focus:border-accent-blue"
+                                    required
+                                />
+                                <span class="text-zinc-600 font-bold">-</span>
+                                <input
+                                    type="time"
+                                    name="closeTime"
+                                    id="input-closeTime"
+                                    class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-3 text-sm text-center text-white focus:border-accent-blue"
+                                />
+                            </div>
+                            <input type="hidden" name="time" id="time-hidden" />
+                        </div>
+
+                        <div class="h-px bg-zinc-800 my-2"></div>
+
+                        <Input
+                            label="Place Name"
+                            name="place"
+                            id="input-place"
+                            required
+                            placeholder="Club Name"
+                        />
+                        <Input
+                            label="Address"
+                            name="address"
+                            id="input-address"
+                            placeholder="Tokyo, Japan"
+                        />
+                        <Input
+                            label="Google Map Embed URL"
+                            name="mapEmbed"
+                            id="input-mapEmbed"
+                            placeholder="Embed URL"
+                        />
+
+                        <div class="h-px bg-zinc-800 my-2"></div>
+
+                        <Input
+                            label="Short Price Info"
+                            name="price"
+                            id="input-price"
+                            required
+                            placeholder="¥2,000 + 1D"
+                        />
+                    </div>
+                </section>
+
+                {/* 4. Images */}
+                <section class={STYLES.section}>
+                    <div class={STYLES.sectionHeader}>
+                        <div
+                            class={`${STYLES.sectionIcon} bg-accent-red/10 text-accent-red border-accent-red/20`}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><rect
+                                    x="3"
+                                    y="3"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                    ry="2"></rect><circle
+                                    cx="8.5"
+                                    cy="8.5"
+                                    r="1.5"></circle><polyline
+                                    points="21 15 16 10 5 21"></polyline></svg
+                            >
+                        </div>
+                        <h3 class={STYLES.sectionTitle}>IMAGES</h3>
+                    </div>
+
+                    <div class="space-y-6">
+                        {/* Main Visual */}
+                        <div class="space-y-2">
+                            <label class={STYLES.label}
+                                >MAIN VISUAL (Portrait)</label
+                            >
+                            <div
+                                id="drop-main"
+                                class={`${STYLES.dropzone} aspect-[3/4]`}
+                                tabindex="0"
+                            >
+                                <input
+                                    type="file"
+                                    id="input-main"
+                                    accept="image/*"
+                                    class="hidden"
+                                />
+                                <input type="hidden" id="existing-main-url" />
+                                <div
+                                    id="preview-main-placeholder"
+                                    class="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 group-hover:text-zinc-400 transition-colors pointer-events-none"
+                                >
+                                    <span
+                                        class="text-[10px] font-bold tracking-widest"
+                                        >DRAG / PASTE</span
+                                    >
+                                </div>
+                                <img
+                                    id="preview-main-img"
+                                    class="absolute inset-0 w-full h-full object-cover hidden transition-opacity duration-300"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Thumbnail */}
+                        <div class="space-y-2">
+                            <label class={STYLES.label}
+                                >THUMBNAIL (Square)</label
+                            >
+                            <div
+                                id="drop-thumb"
+                                class={`${STYLES.dropzone} aspect-square`}
+                                tabindex="0"
+                            >
+                                <input
+                                    type="file"
+                                    id="input-thumb"
+                                    accept="image/*"
+                                    class="hidden"
+                                />
+                                <input type="hidden" id="existing-thumb-url" />
+                                <div
+                                    id="preview-thumb-placeholder"
+                                    class="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 group-hover:text-zinc-400 transition-colors pointer-events-none"
+                                >
+                                    <span
+                                        class="text-[10px] font-bold tracking-widest"
+                                        >DRAG / PASTE</span
+                                    >
+                                </div>
+                                <img
+                                    id="preview-thumb-img"
+                                    class="absolute inset-0 w-full h-full object-cover hidden transition-opacity duration-300"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 5. Reservation */}
+                <section class={STYLES.section}>
+                    <div class={STYLES.sectionHeader}>
+                        <div
+                            class={`${STYLES.sectionIcon} bg-accent-blue/10 text-accent-blue border-accent-blue/20`}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                ><rect
+                                    x="3"
+                                    y="4"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                    ry="2"></rect><line
+                                    x1="16"
+                                    y1="2"
+                                    x2="16"
+                                    y2="6"></line><line
+                                    x1="8"
+                                    y1="2"
+                                    x2="8"
+                                    y2="6"></line><line
+                                    x1="3"
+                                    y1="10"
+                                    x2="21"
+                                    y2="10"></line></svg
+                            >
+                        </div>
+                        <h3 class={STYLES.sectionTitle}>RESERVATION</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <Input
+                            label="Ticket URL (TwiPla)"
+                            name="ticketLink"
+                            id="input-ticketLink"
+                            placeholder="https://twipla.jp/..."
+                        />
+                        <div>
+                            <label class={STYLES.label}>Deadline</label>
+                            <input
+                                type="datetime-local"
+                                name="ticketDeadline"
+                                id="input-ticketDeadline"
+                                class={STYLES.select}
+                            />
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        <input type="hidden" name="body" id="final-body" />
+    </form>
+</div>
+
+{/* TEMPLATES (Timetable & Price Row) - 省略なし */}
+<template id="tmpl-tt-row">
+    <div
+        class="flex gap-2 items-center group row-tt animate-in fade-in slide-in-from-top-2 duration-300 mb-2"
+    >
+        <div
+            class="w-6 text-zinc-700 flex justify-center cursor-move select-none group-hover:text-zinc-500 transition-colors"
+        >
+            ⋮⋮
+        </div>
+        <input
+            type="time"
+            class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-2.5 text-xs text-center text-white focus:border-accent-blue w-20 input-time"
+            required
+        />
+        <input
+            type="text"
+            class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-300 focus:text-white focus:border-accent-blue input-content"
+            placeholder="Artist / Content"
+            required
+        />
+        <button
+            type="button"
+            class="w-9 h-9 flex items-center justify-center text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors btn-remove"
+            title="削除"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><line x1="18" y1="6" x2="6" y2="18"></line><line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"></line></svg
+            >
+        </button>
+    </div>
+</template>
+
+<template id="tmpl-price-row">
+    <div
+        class="flex gap-2 items-center group row-price animate-in fade-in slide-in-from-top-2 duration-300 mb-2"
+    >
+        <div
+            class="w-6 text-zinc-700 flex justify-center cursor-move select-none group-hover:text-zinc-500 transition-colors"
+        >
+            ⋮⋮
+        </div>
+        <select
+            class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-2.5 text-xs text-zinc-300 focus:text-white focus:border-accent-blue w-32 input-type cursor-pointer"
+        >
+            <option value="DOOR">DOOR</option>
+            <option value="TwiPla">TwiPla</option>
+            <option value="ADV">ADV</option>
+            <option value="LATE DISCOUNT">LATE DISCOUNT</option>
+            <option value="U-23">U-23</option>
+            <option value="VRC">VRC割</option>
+        </select>
+        <input
+            type="time"
+            class="hidden bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-2.5 text-xs text-center text-white w-20 input-late-time"
+        />
+        <input
+            type="datetime-local"
+            class="hidden bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-2.5 text-[10px] text-white w-36 input-twipla-deadline"
+        />
+        <div class="relative flex-1">
+            <span
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs font-mono"
+                >¥</span
+            >
+            <input
+                type="text"
+                class="w-full bg-zinc-950 border border-zinc-700 rounded-lg pl-6 pr-3 py-2.5 text-sm text-white focus:border-accent-blue input-price"
+                placeholder="2000"
+                required
+            />
+        </div>
+        <button
+            type="button"
+            class="w-9 h-9 flex items-center justify-center text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors btn-remove"
+            title="削除"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><line x1="18" y1="6" x2="6" y2="18"></line><line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"></line></svg
+            >
+        </button>
+    </div>
+</template>
+
+<script>
+    import { db, storage } from "../../lib/firebase/client";
+    import {
+        doc,
+        getDoc,
+        addDoc,
+        setDoc,
+        updateDoc,
+        collection,
+        serverTimestamp,
+    } from "firebase/firestore";
+    import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+    // --- UTILS ---
+    const getEl = (id: string) => document.getElementById(id);
+    const pad = (n: number) => (n < 10 ? "0" + n : n);
+
+    // 画像圧縮処理
+    const processImage = async (file: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    const MAX_WIDTH = 1200;
+                    let w = img.width,
+                        h = img.height;
+                    if (w > MAX_WIDTH) {
+                        h *= MAX_WIDTH / w;
+                        w = MAX_WIDTH;
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext("2d");
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob(
+                            (b) => (b ? resolve(b) : reject()),
+                            "image/webp",
+                            0.85,
+                        );
+                    } else reject();
+                };
+            };
+            reader.onerror = reject;
+        });
+    };
+
+    // Markdown Parser / Generator / UI Helpers (省略せず維持)
+    const parseMarkdown = (body: string) => {
+        const lines = body.split("\n");
+        let mode = "intro";
+        const introInput = getEl("body-intro") as HTMLTextAreaElement;
+        const notesInput = getEl("body-notes") as HTMLTextAreaElement;
+        const ttContainer = getEl("tt-container");
+        const priceContainer = getEl("price-container");
+
+        if (ttContainer) ttContainer.innerHTML = "";
+        if (priceContainer) priceContainer.innerHTML = "";
+
+        lines.forEach((line) => {
+            line = line.trim();
+            if (!line && mode !== "intro" && mode !== "attention") return;
+            if (line.startsWith("## TIMETABLE")) {
+                mode = "timetable";
+                return;
+            }
+            if (line.startsWith("## ENTRANCE FEE")) {
+                mode = "price";
+                return;
+            }
+            if (line.startsWith("## ATTENTION")) {
+                mode = "attention";
+                return;
+            }
+
+            if (mode === "intro") introInput.value += line + "\n";
+            else if (mode === "attention") notesInput.value += line + "\n";
+            else if (mode === "timetable") {
+                const match = line.match(/^-\s*\*\*(.*?)\*\*\s*(.*)$/);
+                if (match)
+                    addRow(ttContainer, "tmpl-tt-row", {
+                        time: match[1],
+                        content: match[2],
+                    });
+            } else if (mode === "price") {
+                if (
+                    line.startsWith("|") &&
+                    !line.includes("---") &&
+                    !line.includes("TICKET TYPE")
+                ) {
+                    const parts = line
+                        .split("|")
+                        .map((s) => s.trim())
+                        .filter((s) => s);
+                    if (parts.length >= 2)
+                        addRow(priceContainer, "tmpl-price-row", {
+                            type: parts[0],
+                            price: parts[1],
+                        });
+                }
+            }
+        });
+        autoExpand(introInput);
+        autoExpand(notesInput);
+    };
+
+    const generateMarkdown = () => {
+        const intro = (getEl("body-intro") as HTMLTextAreaElement).value.trim();
+        const notes = (getEl("body-notes") as HTMLTextAreaElement).value.trim();
+        let md = "";
+        if (intro) md += intro + "\n\n";
+
+        const ttRows = document.querySelectorAll(".row-tt");
+        if (ttRows.length > 0) {
+            md += "## TIMETABLE\n";
+            ttRows.forEach((row) => {
+                const time = (
+                    row.querySelector(".input-time") as HTMLInputElement
+                ).value;
+                const content = (
+                    row.querySelector(".input-content") as HTMLInputElement
+                ).value;
+                if (time && content) md += `- **${time}** ${content}\n`;
+            });
+            md += "\n";
+        }
+
+        const priceRows = document.querySelectorAll(".row-price");
+        if (priceRows.length > 0) {
+            md +=
+                "## ENTRANCE FEE\n| TICKET TYPE | PRICE |\n| :---------- | ----: |\n";
+            priceRows.forEach((row) => {
+                const typeEl = row.querySelector(
+                    ".input-type",
+                ) as HTMLSelectElement;
+                const priceEl = row.querySelector(
+                    ".input-price",
+                ) as HTMLInputElement;
+                const lateTimeEl = row.querySelector(
+                    ".input-late-time",
+                ) as HTMLInputElement;
+                const twiplaEl = row.querySelector(
+                    ".input-twipla-deadline",
+                ) as HTMLInputElement;
+                if (priceEl.value) {
+                    let label = typeEl.value;
+                    if (label === "LATE DISCOUNT" && lateTimeEl.value)
+                        label += ` (${lateTimeEl.value}~)`;
+                    if (label === "TwiPla" && twiplaEl.value) {
+                        const d = new Date(twiplaEl.value);
+                        if (!isNaN(d.getTime())) {
+                            const mon = d.getMonth() + 1;
+                            const day = d.getDate();
+                            const hh = String(d.getHours()).padStart(2, "0");
+                            const mm = String(d.getMinutes()).padStart(2, "0");
+                            label += ` (〆${mon}/${day} ${hh}:${mm})`;
+                        }
+                    }
+                    const priceVal = priceEl.value
+                        .replace("¥", "")
+                        .replace("￥", "");
+                    md += `| ${label} | ¥${priceVal} |\n`;
+                }
+            });
+            md += "\n";
+        }
+        if (notes) md += "## ATTENTION\n" + notes;
+        return md;
+    };
+
+    const autoExpand = (el: HTMLElement) => {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + 2 + "px";
+    };
+
+    const addRow = (
+        container: HTMLElement | null,
+        tmplId: string,
+        data?: any,
+    ) => {
+        if (!container) return;
+        const tmpl = getEl(tmplId) as HTMLTemplateElement;
+        const clone = tmpl.content.cloneNode(true) as DocumentFragment;
+
+        clone
+            .querySelector(".btn-remove")
+            ?.addEventListener("click", (e) =>
+                (e.target as HTMLElement).closest(".group")?.remove(),
+            );
+
+        const typeSelect = clone.querySelector(
+            ".input-type",
+        ) as HTMLSelectElement;
+        if (typeSelect) {
+            const toggleInputs = () => {
+                const row = typeSelect.closest(".row-price");
+                const late = row?.querySelector(
+                    ".input-late-time",
+                ) as HTMLElement;
+                const twi = row?.querySelector(
+                    ".input-twipla-deadline",
+                ) as HTMLElement;
+                if (!late || !twi) return;
+                late.classList.add("hidden");
+                twi.classList.add("hidden");
+                if (typeSelect.value === "LATE DISCOUNT")
+                    late.classList.remove("hidden");
+                if (typeSelect.value === "TwiPla")
+                    twi.classList.remove("hidden");
+            };
+            typeSelect.addEventListener("change", toggleInputs);
+            if (data && data.type) {
+                if (data.type.includes("LATE DISCOUNT")) {
+                    typeSelect.value = "LATE DISCOUNT";
+                    const match = data.type.match(/\((.*?)~\)/);
+                    if (match)
+                        (
+                            clone.querySelector(
+                                ".input-late-time",
+                            ) as HTMLInputElement
+                        ).value = match[1];
+                } else if (data.type.includes("TwiPla")) {
+                    typeSelect.value = "TwiPla";
+                } else {
+                    typeSelect.value = data.type;
+                }
+                setTimeout(toggleInputs, 0);
+            }
+        }
+
+        if (data) {
+            if (data.time)
+                (clone.querySelector(".input-time") as HTMLInputElement).value =
+                    data.time;
+            if (data.content)
+                (
+                    clone.querySelector(".input-content") as HTMLInputElement
+                ).value = data.content;
+            if (data.price)
+                (
+                    clone.querySelector(".input-price") as HTMLInputElement
+                ).value = data.price.replace("¥", "").replace(",", "");
+        }
+        container.appendChild(clone);
+    };
+
+    const setupImageUploader = (id: string) => {
+        const dropZone = getEl(`drop-${id}`);
+        const input = getEl(`input-${id}`) as HTMLInputElement;
+        const img = getEl(`preview-${id}-img`) as HTMLImageElement;
+        const ph = getEl(`preview-${id}-placeholder`);
+        let fileToUpload: File | null = null;
+        const updatePreview = (file: File) => {
+            if (!file.type.startsWith("image/")) return;
+            fileToUpload = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.src = e.target?.result as string;
+                img.classList.remove("hidden");
+                ph?.classList.add("hidden");
+            };
+            reader.readAsDataURL(file);
+        };
+        if (!dropZone || !input) return () => null;
+        dropZone.onclick = () => input.click();
+        input.onchange = (e: any) => {
+            if (e.target.files?.[0]) updatePreview(e.target.files[0]);
+        };
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add("border-accent-blue");
+        };
+        dropZone.ondragleave = () =>
+            dropZone.classList.remove("border-accent-blue");
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("border-accent-blue");
+            if (e.dataTransfer?.files?.[0])
+                updatePreview(e.dataTransfer.files[0]);
+        };
+        dropZone.addEventListener("paste", (e: any) => {
+            e.preventDefault();
+            const items = (e.clipboardData || e.originalEvent.clipboardData)
+                .items;
+            for (const item of items) {
+                if (item.kind === "file" && item.type.startsWith("image/")) {
+                    const blob = item.getAsFile();
+                    if (blob) updatePreview(blob);
+                }
+            }
+        });
+        return () => fileToUpload;
+    };
+
+    // --- MAIN ---
+    document.addEventListener("astro:page-load", async () => {
+        const form = getEl("event-form") as HTMLFormElement;
+        const loading = getEl("loading-overlay");
+        const submitBtn = getEl("submit-btn") as HTMLButtonElement;
+
+        if (!form) return;
+
+        // Mode Check
+        const mode = (getEl("form-mode") as HTMLInputElement).value;
+        const originalId = (getEl("original-id") as HTMLInputElement).value;
+
+        const getMainFile = setupImageUploader("main");
+        const getThumbFile = setupImageUploader("thumb");
+
+        document
+            .querySelectorAll(".auto-expand")
+            .forEach((el) =>
+                el.addEventListener("input", () =>
+                    autoExpand(el as HTMLElement),
+                ),
+            );
+        getEl("add-tt-btn")?.addEventListener("click", () =>
+            addRow(getEl("tt-container"), "tmpl-tt-row"),
+        );
+        getEl("add-price-btn")?.addEventListener("click", () =>
+            addRow(getEl("price-container"), "tmpl-price-row"),
+        );
+
+        // LOAD DATA
+        if (originalId) {
+            try {
+                // Editモードの場合、ID欄に今のIDを表示して無効化
+                const customIdInput = getEl(
+                    "input-customId",
+                ) as HTMLInputElement;
+                customIdInput.value = originalId;
+
+                const docSnap = await getDoc(doc(db, "events", originalId));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    (getEl("input-title") as HTMLInputElement).value =
+                        data.title;
+                    (getEl("input-subTitle") as HTMLInputElement).value =
+                        data.subTitle || "";
+                    (getEl("input-status") as HTMLSelectElement).value =
+                        data.status || "archive";
+                    (getEl("input-mapEmbed") as HTMLInputElement).value =
+                        data.mapEmbed || "";
+
+                    const d = data.date.toDate();
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, "0");
+                    const day = String(d.getDate()).padStart(2, "0");
+                    (getEl("input-date") as HTMLInputElement).value =
+                        `${y}-${m}-${day}`;
+
+                    if (data.time) {
+                        const parts = data.time.split(" ");
+                        if (parts.length >= 2) {
+                            (getEl("time-prefix") as HTMLSelectElement).value =
+                                parts[0];
+                            (getEl("time-value") as HTMLInputElement).value =
+                                parts[1];
+                        } else {
+                            (getEl("time-value") as HTMLInputElement).value =
+                                data.time;
+                        }
+                    }
+                    (getEl("input-closeTime") as HTMLInputElement).value =
+                        data.closeTime || "";
+                    (getEl("input-place") as HTMLInputElement).value =
+                        data.place;
+                    (getEl("input-address") as HTMLInputElement).value =
+                        data.address || "";
+                    (getEl("input-price") as HTMLInputElement).value =
+                        data.price;
+                    (getEl("input-ticketLink") as HTMLInputElement).value =
+                        data.ticketLink || "";
+
+                    if (data.ticketDeadline) {
+                        const td = data.ticketDeadline.toDate();
+                        const ty = td.getFullYear();
+                        const tm = String(td.getMonth() + 1).padStart(2, "0");
+                        const tdd = String(td.getDate()).padStart(2, "0");
+                        const th = String(td.getHours()).padStart(2, "0");
+                        const tmin = String(td.getMinutes()).padStart(2, "0");
+                        (
+                            getEl("input-ticketDeadline") as HTMLInputElement
+                        ).value = `${ty}-${tm}-${tdd}T${th}:${tmin}`;
+                    }
+                    if (data.mainVisual) {
+                        const img = getEl(
+                            "preview-main-img",
+                        ) as HTMLImageElement;
+                        img.src = data.mainVisual;
+                        img.classList.remove("hidden");
+                        getEl("preview-main-placeholder")?.classList.add(
+                            "hidden",
+                        );
+                        (getEl("existing-main-url") as HTMLInputElement).value =
+                            data.mainVisual;
+                    }
+                    if (data.thumbnail) {
+                        const img = getEl(
+                            "preview-thumb-img",
+                        ) as HTMLImageElement;
+                        img.src = data.thumbnail;
+                        img.classList.remove("hidden");
+                        getEl("preview-thumb-placeholder")?.classList.add(
+                            "hidden",
+                        );
+                        (
+                            getEl("existing-thumb-url") as HTMLInputElement
+                        ).value = data.thumbnail;
+                    }
+                    if (data.body) parseMarkdown(data.body);
+
+                    form.dataset.loaded = "true";
+                    loading?.classList.add("opacity-0", "pointer-events-none");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("データの読み込みに失敗しました: " + e);
+            }
+        } else {
+            form.dataset.loaded = "true";
+            addRow(getEl("tt-container"), "tmpl-tt-row");
+            addRow(getEl("price-container"), "tmpl-price-row");
+        }
+
+        // SUBMIT
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!confirm("この内容で保存しますか？")) return;
+
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>SAVING...</span>`;
+
+            try {
+                // カスタムIDのチェック (新規作成時のみ)
+                const customId = (
+                    getEl("input-customId") as HTMLInputElement
+                ).value.trim();
+                let targetId = originalId; // 編集時は既存ID
+
+                if (mode === "new" && customId) {
+                    // 重複チェック
+                    const docRef = doc(db, "events", customId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        alert(
+                            `エラー: ID "${customId}" は既に使用されています。別のIDを指定してください。`,
+                        );
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                        return;
+                    }
+                    targetId = customId;
+                }
+
+                // Time Combine
+                const timePrefix = (getEl("time-prefix") as HTMLSelectElement)
+                    .value;
+                const timeVal = (getEl("time-value") as HTMLInputElement).value;
+                (getEl("time-hidden") as HTMLInputElement).value =
+                    `${timePrefix} ${timeVal}`;
+
+                (getEl("final-body") as HTMLInputElement).value =
+                    generateMarkdown();
+
+                const uploadImage = async (
+                    file: File | null,
+                    prefix: string,
+                ) => {
+                    if (!file) return null;
+                    const blob = await processImage(file);
+                    const refPath = `events/${Date.now()}_${prefix}.webp`;
+                    const sRef = ref(storage, refPath);
+                    await uploadBytes(sRef, blob);
+                    return await getDownloadURL(sRef);
+                };
+
+                submitBtn.innerHTML = `<span>UPLOADING IMAGES...</span>`;
+                const [mainUrl, thumbUrl] = await Promise.all([
+                    uploadImage(getMainFile(), "main"),
+                    uploadImage(getThumbFile(), "thumb"),
+                ]);
+
+                const formData = new FormData(form);
+                const finalData: any = {
+                    title: formData.get("title"),
+                    subTitle: formData.get("subTitle"),
+                    date: new Date(formData.get("date") as string),
+                    time: formData.get("time"),
+                    closeTime: formData.get("closeTime"),
+                    place: formData.get("place"),
+                    address: formData.get("address"),
+                    mapEmbed: formData.get("mapEmbed"),
+                    price: formData.get("price"),
+                    status: formData.get("status"),
+                    body: formData.get("body"),
+                    mainVisual:
+                        mainUrl ||
+                        (getEl("existing-main-url") as HTMLInputElement)
+                            .value ||
+                        "",
+                    thumbnail:
+                        thumbUrl ||
+                        (getEl("existing-thumb-url") as HTMLInputElement)
+                            .value ||
+                        "",
+                    ticketLink: formData.get("ticketLink"),
+                    ticketDeadline: formData.get("ticketDeadline")
+                        ? new Date(formData.get("ticketDeadline") as string)
+                        : null,
+                    updatedAt: serverTimestamp(),
+                };
+
+                submitBtn.innerHTML = `<span>WRITING DB...</span>`;
+
+                if (mode === "edit" && targetId) {
+                    // 更新 (updateDoc)
+                    await updateDoc(doc(db, "events", targetId), finalData);
+                } else if (mode === "new") {
+                    finalData.createdAt = serverTimestamp();
+                    if (targetId) {
+                        // ID指定保存 (setDoc)
+                        await setDoc(doc(db, "events", targetId), finalData);
+                    } else {
+                        // ID自動生成 (addDoc)
+                        await addDoc(collection(db, "events"), finalData);
+                    }
+                }
+
+                alert("保存しました！");
+                window.location.href = "/admin";
+            } catch (e) {
+                console.error(e);
+                alert("保存エラー: " + e);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    });
+</script>
