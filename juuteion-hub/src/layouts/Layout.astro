@@ -1,115 +1,163 @@
 ---
-import "@fontsource/ibm-plex-sans-jp/400.css";
-import "@fontsource/ibm-plex-sans-jp/700.css";
-import "@fontsource/montserrat/400.css";
-import "@fontsource/montserrat/700.css";
+// src/layouts/Layout.astro
 import "../styles/global.css";
-import { ViewTransitions } from "astro:transitions";
-import { ClientRouter } from "astro:transitions"; // 追加
-// ▼ 修正: fade のインポートは不要になるので削除してもOKですが、残しておいても害はありません
+import { Image } from "astro:assets"; // ⬅️ 追加
+import logoImage from "../assets/logo/jto_logo.svg"; // ⬅️ 復活！
 
 interface Props {
     title: string;
-    isFluid?: boolean;
-    // ▼ SEO用Props
     description?: string;
     image?: string;
+    isFluid?: boolean;
 }
 
 const {
     title,
+    description = "JUUTEION Event Hub",
+    image,
     isFluid = false,
-    description = "ケモノ好きが集う、酔いどれケモナークラブイベント獸酊音 公式サイト。",
-    image = "/top-bg.jpg", // デフォルトOGP画像
 } = Astro.props;
-
-// 絶対パスの生成
-const siteUrl = new URL(
-    Astro.url.pathname,
-    Astro.site || "https://juuteion-hub.web.app",
-);
-const ogImageUrl = new URL(image, siteUrl);
-
-// ▼▼▼ 追加: 限界まで「待ち」を削るカスタムアニメーション定義 ▼▼▼
-const fastFade = {
-    old: {
-        name: "astroFadeOut",
-        duration: "0.2s", // 0.1秒で即座に消去
-        easing: "linear",
-        fillMode: "forwards",
-    },
-    new: {
-        name: "astroFadeIn",
-        duration: "0.2s", // 0.15秒で素早く表示 (これ以上早いと点滅に見える)
-        easing: "ease-out",
-        fillMode: "backwards",
-    },
-};
-
-const customTransition = {
-    forwards: fastFade,
-    backwards: fastFade,
-};
 ---
 
 <!doctype html>
-<html lang="ja" class="dark scroll-smooth">
+<html lang="ja" class="scroll-smooth">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width" />
+        <meta name="description" content={description} />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="generator" content={Astro.generator} />
+        <title>{title}</title>
 
-        <link rel="preload" as="image" href={ogImageUrl} />
+        {image && <meta property="og:image" content={image} />}
 
-        {/* SEO & OGP Meta Tags */}
-        <title>{title} | 獸酊音 JUUTEION</title>
-        <meta name="description" content={description} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;700&family=Montserrat:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
 
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={siteUrl} />
-        <meta property="og:title" content={`${title} | 獸酊音`} />
-        <meta property="og:description" content={description} />
-        <meta property="og:image" content={ogImageUrl} />
+        <style>
+            .fade-content-enter {
+                opacity: 0;
+                transform: translateY(10px);
+                transition:
+                    opacity 0.8s ease-out,
+                    transform 0.8s ease-out;
+            }
+            .fade-content-active {
+                opacity: 1;
+                transform: translateY(0);
+            }
 
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content={siteUrl} />
-        <meta property="twitter:title" content={`${title} | 獸酊音`} />
-        <meta property="twitter:description" content={description} />
-        <meta property="twitter:image" content={ogImageUrl} />
-
-        {/* iOSのアドレスバー色指定 */}
-        <meta name="theme-color" content="#09090b" />
-
-        <ClientRouter />
+            @keyframes pulse-bar {
+                0%,
+                100% {
+                    width: 0%;
+                    opacity: 0;
+                }
+                50% {
+                    width: 50%;
+                    opacity: 1;
+                }
+            }
+            .animate-pulse-bar {
+                animation: pulse-bar 2s ease-in-out infinite;
+            }
+        </style>
     </head>
+
     <body
-        class="bg-background text-text-main antialiased selection:bg-accent-blue selection:text-white"
+        class="bg-zinc-950 text-zinc-400 antialiased font-sans overflow-x-hidden min-h-screen"
     >
-        {/* Ambient Light */}
-        <div class="fixed inset-0 z-0 pointer-events-none opacity-50">
-            <div
-                class="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-accent-blue/5 rounded-full blur-[120px]"
-            >
+        <div
+            id="app-loader"
+            class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-zinc-950 transition-opacity duration-1000 ease-out pointer-events-none opacity-0"
+        >
+            <div class="mb-8 w-32 opacity-90">
+                <Image
+                    src={logoImage}
+                    alt="JUUTEION"
+                    class="w-full h-auto"
+                    loading="eager"
+                />
             </div>
-            <div
-                class="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-accent-red/5 rounded-full blur-[120px]"
-            >
+
+            <div class="w-48 h-[1px] bg-zinc-800 relative overflow-hidden">
+                <div
+                    class="absolute inset-0 bg-zinc-100 h-full w-full origin-left animate-pulse-bar"
+                >
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-zinc-600 tracking-widest font-mono">
+                LOADING SYSTEM...
             </div>
         </div>
 
-        {/* ▼▼▼ 修正: customTransition を適用 ▼▼▼ */}
-        <main
-            transition:animate={customTransition}
-            class:list={[
-                "relative z-10 min-h-screen scrollbar-hide",
-                isFluid
-                    ? "w-full"
-                    : "w-full max-w-[480px] mx-auto bg-black/80 backdrop-blur-2xl border-x border-white/5 shadow-2xl",
-            ]}
-        >
-            <slot />
-        </main>
+        <div id="main-content" class="fade-content-enter">
+            <main
+                class:list={[
+                    "relative min-h-screen",
+                    !isFluid &&
+                        "max-w-[480px] mx-auto bg-zinc-950 shadow-2xl shadow-black",
+                ]}
+            >
+                <slot />
+            </main>
+        </div>
+
+        <script>
+            const MIN_LOADING_TIME = 1200;
+            const SESSION_KEY = "jto_session_visited";
+
+            const loader = document.getElementById("app-loader");
+            const content = document.getElementById("main-content");
+            const isFirstVisit = !sessionStorage.getItem(SESSION_KEY);
+
+            const onPageLoaded = () => {
+                if (isFirstVisit) {
+                    loader?.classList.remove(
+                        "opacity-0",
+                        "pointer-events-none",
+                    );
+                    setTimeout(() => {
+                        revealContent(true);
+                        sessionStorage.setItem(SESSION_KEY, "true");
+                    }, MIN_LOADING_TIME);
+                } else {
+                    revealContent(false);
+                }
+            };
+
+            const revealContent = (withCurtain: boolean) => {
+                if (withCurtain) {
+                    loader?.classList.add("opacity-0");
+                    setTimeout(() => {
+                        loader?.classList.add("pointer-events-none");
+                    }, 1000);
+                }
+                setTimeout(
+                    () => {
+                        content?.classList.add("fade-content-active");
+                    },
+                    withCurtain ? 500 : 100,
+                );
+            };
+
+            if (document.readyState === "complete") {
+                onPageLoaded();
+            } else {
+                window.addEventListener("load", onPageLoaded);
+            }
+
+            if (isFirstVisit && loader) {
+                loader.classList.remove("opacity-0", "pointer-events-none");
+            }
+        </script>
     </body>
 </html>
 
