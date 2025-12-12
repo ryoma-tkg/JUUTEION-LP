@@ -19,12 +19,18 @@ import MemberCard from "../components/ui/MemberCard.astro";
 // テスト用に既存画像をアバターとして使い回します
 import avatarPlaceholder from "../assets/images/teaser.jpg";
 
+// SNSリンクの有効判定ロジック
+const isSocialActive = (url: string | undefined) =>
+	url && url !== "" && url !== "#";
+const xActive = isSocialActive(SOCIAL_LINKS.x);
+const instaActive = isSocialActive(SOCIAL_LINKS.instagram);
+const vrcActive = isSocialActive(SOCIAL_LINKS.vrcGroup);
+
 let heroEvent: any = null;
 let upcomingList: any[] = [];
 let archiveList: any[] = [];
 let sectionTitle = "● NEXT EVENT";
 let sectionColor = "yellow";
-
 try {
 	console.log("🔥 [Build] Fetching events from Firestore...");
 	const q = query(collection(db, "events"));
@@ -50,17 +56,14 @@ try {
 			endAt: end,
 		};
 	});
-
 	const now = new Date();
 
 	const activeEvents = allEvents
 		.filter((e) => now < e.endAt && e.status !== "archive")
 		.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
-
 	const finishedEvents = allEvents
 		.filter((e) => now >= e.endAt || e.status === "archive")
 		.sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
-
 	if (activeEvents.length > 0) {
 		const primary = activeEvents[0];
 		upcomingList = activeEvents.slice(1);
@@ -72,7 +75,6 @@ try {
 			primary.closeTime,
 			primary.status,
 		);
-
 		heroEvent = { ...primary, statusObj: st };
 		if (st.label === "NOW OPEN") {
 			sectionTitle = "● NOW OPEN";
@@ -117,7 +119,6 @@ const heroData = heroEvent
 			imagePosition: heroEvent.imagePosition,
 		}
 	: null;
-
 const isDev = import.meta.env.DEV;
 ---
 
@@ -359,10 +360,16 @@ const isDev = import.meta.env.DEV;
 								<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									{/* Official X */}
 									<a
-										href={SOCIAL_LINKS.x}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="group bg-surface border border-subtle hover:border-accent-blue/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+										href={
+											xActive ? SOCIAL_LINKS.x : undefined
+										}
+										target={xActive ? "_blank" : undefined}
+										rel={
+											xActive
+												? "noopener noreferrer"
+												: undefined
+										}
+										class={`group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${xActive ? "hover:border-accent-blue/50" : "opacity-50 cursor-not-allowed"}`}
 									>
 										<div class="flex items-center gap-4">
 											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-blue/30">
@@ -387,17 +394,29 @@ const isDev = import.meta.env.DEV;
 												</>
 											</div>
 										</div>
-										<span class="text-xs text-subtle group-hover:text-accent-blue transition-colors font-en">
-											VIEW →
+										<span
+											class={`text-xs text-subtle transition-colors font-en ${xActive ? "group-hover:text-accent-blue" : ""}`}
+										>
+											{xActive ? "VIEW →" : "準備中"}
 										</span>
 									</a>
 
 									{/* Instagram */}
 									<a
-										href={SOCIAL_LINKS.instagram}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="group bg-surface border border-subtle hover:border-accent-red/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+										href={
+											instaActive
+												? SOCIAL_LINKS.instagram
+												: undefined
+										}
+										target={
+											instaActive ? "_blank" : undefined
+										}
+										rel={
+											instaActive
+												? "noopener noreferrer"
+												: undefined
+										}
+										class={`group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${instaActive ? "hover:border-accent-red/50" : "opacity-50 cursor-not-allowed"}`}
 									>
 										<div class="flex items-center gap-4">
 											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-red/30">
@@ -442,17 +461,29 @@ const isDev = import.meta.env.DEV;
 												</>
 											</div>
 										</div>
-										<span class="text-xs text-subtle group-hover:text-accent-red transition-colors font-en">
-											VIEW →
+										<span
+											class={`text-xs text-subtle transition-colors font-en ${instaActive ? "group-hover:text-accent-red" : ""}`}
+										>
+											{instaActive ? "VIEW →" : "準備中"}
 										</span>
 									</a>
 
 									{/* VRChat */}
 									<a
-										href={SOCIAL_LINKS.vrcGroup}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="sm:col-span-2 group bg-surface border border-subtle hover:border-accent-yellow/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+										href={
+											vrcActive
+												? SOCIAL_LINKS.vrcGroup
+												: undefined
+										}
+										target={
+											vrcActive ? "_blank" : undefined
+										}
+										rel={
+											vrcActive
+												? "noopener noreferrer"
+												: undefined
+										}
+										class={`sm:col-span-2 group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${vrcActive ? "hover:border-accent-yellow/50" : "opacity-50 cursor-not-allowed"}`}
 									>
 										<div class="flex items-center gap-4">
 											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-yellow/30">
@@ -471,8 +502,10 @@ const isDev = import.meta.env.DEV;
 												</>
 											</div>
 										</div>
-										<span class="text-xs text-subtle group-hover:text-accent-yellow transition-colors font-en">
-											JOIN →
+										<span
+											class={`text-xs text-subtle transition-colors font-en ${vrcActive ? "group-hover:text-accent-yellow" : ""}`}
+										>
+											{vrcActive ? "JOIN →" : "準備中"}
 										</span>
 									</a>
 								</div>
@@ -492,7 +525,7 @@ const isDev = import.meta.env.DEV;
 										name="諸々"
 										role="Organizer / ILLUSTRATION"
 										description="暮らしのマルチメディア館 B館"
-										imageSrc={avatarPlaceholder.src}
+										imageSrc="https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/icons%2Fmollow.webp?alt=media&token=96c2842c-f9f3-43f1-a195-79413602353c"
 										twitterUrl="https://x.com/mollowmollow"
 										color="blue"
 									/>
@@ -500,15 +533,15 @@ const isDev = import.meta.env.DEV;
 										name="ざな。"
 										role="Organizer / DESIGNER"
 										description="USB引っこ抜き野郎"
-										imageSrc={avatarPlaceholder.src}
+										imageSrc="https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/icons%2Fxana.webp?alt=media&token=39133e68-d852-40c9-95ee-f4d24d28ce17"
 										twitterUrl="https://x.com/xana_kemo_2nd"
 										color="yellow"
 									/>
 									<MemberCard
 										name="時雨ゆん"
 										role="CREW / DJ"
-										description="好きな曲の歌詞引用男"
-										imageSrc={avatarPlaceholder.src}
+										description="インターネット師範代です(苦笑)。創作なんでもやる犬"
+										imageSrc="https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/icons%2Fshig.webp?alt=media&token=aed75535-9cbd-4fa1-b533-b1828fcce0e2"
 										twitterUrl="https://x.com/Yun_Shigure"
 										color="red"
 									/>
@@ -569,7 +602,6 @@ const isDev = import.meta.env.DEV;
 		const now = new Date();
 		const start = new Date(startStr);
 		const end = new Date(endStr);
-
 		// クラス定義
 		const baseClass =
 			"px-3 py-1 rounded-full text-[10px] font-bold tracking-widest inline-flex items-center justify-center transition-colors duration-300 font-en";
@@ -578,7 +610,6 @@ const isDev = import.meta.env.DEV;
 		const redClass =
 			"border border-accent-red/30 bg-accent-red/5 text-accent-red";
 		const defaultClass = "border border-zinc-700 bg-zinc-800 text-zinc-400";
-
 		if (now >= start && now < end) {
 			// NOW OPEN
 			if (tag.innerText !== "NOW OPEN") {
@@ -594,7 +625,6 @@ const isDev = import.meta.env.DEV;
 			if (tag.innerText !== "FINISHED") {
 				tag.innerText = "FINISHED";
 				tag.className = `${baseClass} ${defaultClass}`;
-
 				sectionTitle.innerText = "● FINISHED";
 				sectionTitle.className =
 					"text-sm font-bold tracking-widest font-en pl-1 text-text-muted";

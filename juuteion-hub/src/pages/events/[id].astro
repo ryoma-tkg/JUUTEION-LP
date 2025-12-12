@@ -11,9 +11,15 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
 import { SOCIAL_LINKS } from "../../config";
-
 import { getEventStatus } from "../../lib/utils/eventStatus";
 import { formatDateJST } from "../../lib/utils/date";
+
+// SNSリンクの有効判定ロジック
+const isSocialActive = (url: string | undefined) =>
+    url && url !== "" && url !== "#";
+const xActive = isSocialActive(SOCIAL_LINKS.x);
+const instaActive = isSocialActive(SOCIAL_LINKS.instagram);
+const vrcActive = isSocialActive(SOCIAL_LINKS.vrcGroup);
 
 interface EventData {
     id: string;
@@ -71,7 +77,6 @@ const contentHtml = sanitizeHtml(rawHtml, {
         "*": ["class", "style"], // 必要ならクラスやスタイルも許可
     },
 });
-
 const statusData = getEventStatus(
     event.date,
     event.time,
@@ -389,7 +394,7 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                         )}
                                     </div>
                                     <a
-                                        href={`http://maps.google.com/maps?q=$?q=${encodeURIComponent(event.place + " " + (event.address || ""))}`}
+                                        href={`http://maps.google.com/maps?q=${encodeURIComponent(event.place + " " + (event.address || ""))}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="text-xs font-bold font-en text-accent-blue hover:text-white transition-colors border-b border-accent-blue/30 pb-0.5"
@@ -412,12 +417,11 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                     {/* Grid Layout: 3 items (X, Instagram, VRC) */}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Official X */}
-                        {/* ▼ 修正: SOCIAL_LINKS.x を使用 */}
                         <a
-                            href={SOCIAL_LINKS.x}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="group bg-surface border border-subtle hover:border-accent-blue/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+                            href={xActive ? SOCIAL_LINKS.x : undefined}
+                            target={xActive ? "_blank" : undefined}
+                            rel={xActive ? "noopener noreferrer" : undefined}
+                            class={`group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${xActive ? "hover:border-accent-blue/50" : "opacity-50 cursor-not-allowed"}`}
                         >
                             <div class="flex items-center gap-4">
                                 <div
@@ -451,19 +455,22 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                 </div>
                             </div>
                             <span
-                                class="text-xs text-subtle group-hover:text-accent-blue transition-colors font-en"
+                                class={`text-xs text-subtle transition-colors font-en ${xActive ? "group-hover:text-accent-blue" : ""}`}
                             >
-                                VIEW →
+                                {xActive ? "VIEW →" : "準備中"}
                             </span>
                         </a>
 
                         {/* Instagram */}
-                        {/* ▼ 修正: SOCIAL_LINKS.instagram を使用 */}
                         <a
-                            href={SOCIAL_LINKS.instagram}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="group bg-surface border border-subtle hover:border-accent-red/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+                            href={instaActive
+                                ? SOCIAL_LINKS.instagram
+                                : undefined}
+                            target={instaActive ? "_blank" : undefined}
+                            rel={instaActive
+                                ? "noopener noreferrer"
+                                : undefined}
+                            class={`group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${instaActive ? "hover:border-accent-red/50" : "opacity-50 cursor-not-allowed"}`}
                         >
                             <div class="flex items-center gap-4">
                                 <div
@@ -515,19 +522,18 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                 </div>
                             </div>
                             <span
-                                class="text-xs text-subtle group-hover:text-accent-red transition-colors font-en"
+                                class={`text-xs text-subtle transition-colors font-en ${instaActive ? "group-hover:text-accent-red" : ""}`}
                             >
-                                VIEW →
+                                {instaActive ? "VIEW →" : "準備中"}
                             </span>
                         </a>
 
                         {/* VRChat */}
-                        {/* ▼ 修正: SOCIAL_LINKS.vrcGroup を使用 */}
                         <a
-                            href={SOCIAL_LINKS.vrcGroup}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="sm:col-span-2 group bg-surface border border-subtle hover:border-accent-yellow/50 rounded-2xl p-6 flex items-center justify-between transition-colors duration-300"
+                            href={vrcActive ? SOCIAL_LINKS.vrcGroup : undefined}
+                            target={vrcActive ? "_blank" : undefined}
+                            rel={vrcActive ? "noopener noreferrer" : undefined}
+                            class={`sm:col-span-2 group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${vrcActive ? "hover:border-accent-yellow/50" : "opacity-50 cursor-not-allowed"}`}
                         >
                             <div class="flex items-center gap-4">
                                 <div
@@ -553,9 +559,9 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                 </div>
                             </div>
                             <span
-                                class="text-xs text-subtle group-hover:text-accent-yellow transition-colors font-en"
+                                class={`text-xs text-subtle transition-colors font-en ${vrcActive ? "group-hover:text-accent-yellow" : ""}`}
                             >
-                                JOIN →
+                                {vrcActive ? "JOIN →" : "準備中"}
                             </span>
                         </a>
                     </div>
