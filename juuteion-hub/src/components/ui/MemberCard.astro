@@ -1,0 +1,85 @@
+---
+interface Props {
+    name: string;
+    role: string;
+    description: string;
+    imageSrc: string;
+    twitterUrl: string;
+    color: "blue" | "yellow" | "red";
+}
+
+const { name, role, description, imageSrc, twitterUrl, color } = Astro.props;
+
+const borderColors = {
+    blue: "border-accent-blue",
+    yellow: "border-accent-yellow",
+    red: "border-accent-red",
+};
+
+const textColors = {
+    blue: "text-accent-blue",
+    yellow: "text-accent-yellow",
+    red: "text-accent-red",
+};
+
+const bgColors = {
+    blue: "hover:bg-accent-blue",
+    yellow: "hover:bg-accent-yellow",
+    red: "hover:bg-accent-red",
+};
+---
+
+<article
+    class="w-full py-6 border-b border-subtle flex items-center gap-5 first:pt-0 last:border-b-0 group"
+>
+    <div class="shrink-0">
+        <div
+            class={`w-16 h-16 rounded-full border-2 ${borderColors[color]} p-0.5 bg-background overflow-hidden`}
+        >
+            <img
+                src={imageSrc}
+                alt={name}
+                class="w-full h-full object-cover rounded-full"
+            />
+        </div>
+    </div>
+
+    <div class="flex-1 min-w-0">
+        <div class="flex justify-between items-center">
+            <div>
+                <p
+                    class={`text-xs font-en font-bold tracking-wider uppercase ${textColors[color]} mb-1`}
+                >
+                    {role}
+                </p>
+                <h3
+                    class="text-xl font-bold text-white leading-tight font-sans"
+                >
+                    {name}
+                </h3>
+            </div>
+
+            <a
+                href={twitterUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class={`flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 transition-all duration-300 ${bgColors[color]} hover:text-black hover:scale-105`}
+                aria-label={`${name}'s X profile`}
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    class="w-5 h-5 fill-current"
+                >
+                    <path
+                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                    ></path>
+                </svg>
+            </a>
+        </div>
+
+        <p class="mt-2 text-sm text-text-muted leading-relaxed">
+            {description}
+        </p>
+    </div>
+</article>
