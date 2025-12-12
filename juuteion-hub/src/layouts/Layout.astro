@@ -1,8 +1,8 @@
 ---
 // src/layouts/Layout.astro
 import "../styles/global.css";
-import { Image } from "astro:assets"; // ⬅️ 追加
-import logoImage from "../assets/logo/jto_logo.svg"; // ⬅️ 復活！
+import { Image } from "astro:assets";
+import logoImage from "../assets/logo/jto_logo.svg";
 
 interface Props {
     title: string;
@@ -30,6 +30,7 @@ const {
         />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="generator" content={Astro.generator} />
+
         <title>{title}</title>
 
         {image && <meta property="og:image" content={image} />}
@@ -54,19 +55,24 @@ const {
                 transform: translateY(0);
             }
 
-            @keyframes pulse-bar {
+            /* ▼ 変更: バーのアニメーションを削除し、ロゴの光るアニメーションを追加 */
+            @keyframes logo-shimmer {
                 0%,
                 100% {
-                    width: 0%;
-                    opacity: 0;
+                    opacity: 0.5;
+                    filter: brightness(100%)
+                        drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+                    transform: scale(0.98);
                 }
                 50% {
-                    width: 50%;
                     opacity: 1;
+                    filter: brightness(130%)
+                        drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+                    transform: scale(1);
                 }
             }
-            .animate-pulse-bar {
-                animation: pulse-bar 2s ease-in-out infinite;
+            .animate-logo-shimmer {
+                animation: logo-shimmer 3s ease-in-out infinite;
             }
         </style>
     </head>
@@ -78,23 +84,16 @@ const {
             id="app-loader"
             class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-zinc-950 transition-opacity duration-1000 ease-out pointer-events-none opacity-0"
         >
-            <div class="mb-8 w-32 opacity-90">
+            {
+                /* ▼ 変更: バーとテキストを削除、ロゴのみにしてアニメーション適用 */
+            }
+            <div class="w-32 animate-logo-shimmer">
                 <Image
                     src={logoImage}
                     alt="JUUTEION"
                     class="w-full h-auto"
                     loading="eager"
                 />
-            </div>
-
-            <div class="w-48 h-[1px] bg-zinc-800 relative overflow-hidden">
-                <div
-                    class="absolute inset-0 bg-zinc-100 h-full w-full origin-left animate-pulse-bar"
-                >
-                </div>
-            </div>
-            <div class="mt-4 text-xs text-zinc-600 tracking-widest font-mono">
-                LOADING SYSTEM...
             </div>
         </div>
 
