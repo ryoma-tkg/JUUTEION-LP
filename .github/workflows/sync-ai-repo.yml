@@ -40,6 +40,7 @@ jobs:
           rm -rf .astro
           rm -rf dist
           rm -f package-lock.json
+          rm -f functions/package-lock.json  # ← ここに追加しました
           rm -f bun.lockb
           rm -f yarn.lock
           rm -f pnpm-lock.yaml
