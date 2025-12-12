@@ -14,6 +14,11 @@ import { collection, getDocs, query } from "firebase/firestore";
 import { getEventStatus, getEventDates } from "../lib/utils/eventStatus";
 import { formatDateJST } from "../lib/utils/date";
 
+import MemberCard from "../components/ui/MemberCard.astro";
+
+// テスト用に既存画像をアバターとして使い回します
+import avatarPlaceholder from "../assets/images/teaser.jpg";
+
 let heroEvent: any = null;
 let upcomingList: any[] = [];
 let archiveList: any[] = [];
@@ -473,9 +478,46 @@ const isDev = import.meta.env.DEV;
 								</div>
 							</section>
 
+							<section id="members" class="space-y-6">
+								<div class="flex items-center gap-4 mb-6">
+									<span class="w-1 h-5 bg-gradient-to-b from-accent-blue via-accent-yellow to-accent-red rounded-sm" />
+									<h2 class="text-2xl font-bold font-en tracking-widest text-white uppercase">
+										Crew
+									</h2>
+								</div>
+
+								{/* コンテナ側の space-y を削除し、MemberCard側の py-6 に任せる */}
+								<div class="pl-6">
+									<MemberCard
+										name="諸々"
+										role="Organizer / ILLUSTRATION"
+										description="ほげほげほげほげほげほげほげほげほげほげほげほげほげほげほげ"
+										imageSrc={avatarPlaceholder.src}
+										twitterUrl="https://twitter.com"
+										color="blue"
+									/>
+									<MemberCard
+										name="ざな。"
+										role="Organizer / DESIGNER"
+										description="獸酊音屋さん。DJやったりイラストとか書いてる"
+										imageSrc={avatarPlaceholder.src}
+										twitterUrl="https://x.com/xana_kemo_2nd"
+										color="yellow"
+									/>
+									<MemberCard
+										name="時雨ゆん"
+										role="CREW / DJ"
+										description="ほげほげほげほげほげほげほげほげほげほげほげほげほげほげほげ"
+										imageSrc={avatarPlaceholder.src}
+										twitterUrl="https://twitter.com"
+										color="red"
+									/>
+								</div>
+							</section>
+
 							<footer class="text-center pt-10 pb-20 border-t border-subtle">
 								<p class="text-[10px] text-text-muted/30 font-mono font-en">
-									© 2024 JUUTEION. All Rights Reserved.
+									© 2025 JUUTEION. All Rights Reserved.
 								</p>
 							</footer>
 						</div>
