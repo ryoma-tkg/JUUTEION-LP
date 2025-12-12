@@ -8,6 +8,11 @@ import Tag from "../components/ui/Tag.astro";
 import SectionHeader from "../components/ui/SectionHeader.astro"; // 追加
 import Input from "../components/ui/Input.astro";
 
+import MemberCard from "../components/ui/MemberCard.astro";
+
+// テスト用に既存画像をアバターとして使い回します
+import avatarPlaceholder from "../assets/images/teaser.jpg";
+
 // ▼追加: 画像をインポート (型エラー回避のため)
 // ※ src/assets/images/top-bg.jpg が存在することを確認してください
 import topBg from "../assets/images/top-bg.jpg";
@@ -77,6 +82,52 @@ import topBg from "../assets/images/top-bg.jpg";
                 {
                     /* ... (Header, Typography, Colors セクションは変更なし) ... */
                 }
+
+                <section id="members" class="space-y-6">
+                    <div class="flex items-center gap-4 mb-6">
+                        {/* 3色グラデーションのバーで特別感を演出 */}
+                        <span
+                            class="w-2 h-8 bg-gradient-to-b from-accent-blue via-accent-yellow to-accent-red rounded-sm"
+                        ></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Core Members
+                        </h2>
+                    </div>
+
+                    <div class="pl-6">
+                        {/* Blue Member */}
+                        <MemberCard
+                            name="RYOMA"
+                            role="Organizer / Engineering"
+                            description="JUUTEIONの発起人。全てのシステムと構造を設計するエンジニア。"
+                            imageSrc={avatarPlaceholder.src}
+                            twitterUrl="https://twitter.com"
+                            color="blue"
+                        />
+
+                        {/* Yellow Member */}
+                        <MemberCard
+                            name="KEMO"
+                            role="Vibe Manager"
+                            description="フロアの空気を支配するムードメーカー。危険なほどの熱狂を作り出す。"
+                            imageSrc={avatarPlaceholder.src}
+                            twitterUrl="https://twitter.com"
+                            color="yellow"
+                        />
+
+                        {/* Red Member */}
+                        <MemberCard
+                            name="AKANE"
+                            role="Creative Director"
+                            description="視覚と鼓動をリンクさせるデザイナー。この空間の「赤」を象徴する。"
+                            imageSrc={avatarPlaceholder.src}
+                            twitterUrl="https://twitter.com"
+                            color="red"
+                        />
+                    </div>
+                </section>
 
                 {/* 3. Cards */}
                 <section id="cards" class="space-y-6">

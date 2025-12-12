@@ -5,7 +5,8 @@ import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/700.css";
 import "../styles/global.css";
 import { ViewTransitions } from "astro:transitions";
-import { fade } from "astro:transitions";
+import { ClientRouter } from "astro:transitions"; // 追加
+// ▼ 修正: fade のインポートは不要になるので削除してもOKですが、残しておいても害はありません
 
 interface Props {
     title: string;
@@ -18,16 +19,37 @@ interface Props {
 const {
     title,
     isFluid = false,
-    description = "獣たちが集う、酔いどれケモナークラブイベント「獸酊音 (Juu-Tei-On)」公式サイト。",
+    description = "ケモノ好きが集う、酔いどれケモナークラブイベント獸酊音 公式サイト。",
     image = "/top-bg.jpg", // デフォルトOGP画像
 } = Astro.props;
 
-// 絶対パスの生成 (デプロイ先のURLに合わせて調整されます)
+// 絶対パスの生成
 const siteUrl = new URL(
     Astro.url.pathname,
     Astro.site || "https://juuteion-hub.web.app",
 );
 const ogImageUrl = new URL(image, siteUrl);
+
+// ▼▼▼ 追加: 限界まで「待ち」を削るカスタムアニメーション定義 ▼▼▼
+const fastFade = {
+    old: {
+        name: "astroFadeOut",
+        duration: "0.2s", // 0.1秒で即座に消去
+        easing: "linear",
+        fillMode: "forwards",
+    },
+    new: {
+        name: "astroFadeIn",
+        duration: "0.2s", // 0.15秒で素早く表示 (これ以上早いと点滅に見える)
+        easing: "ease-out",
+        fillMode: "backwards",
+    },
+};
+
+const customTransition = {
+    forwards: fastFade,
+    backwards: fastFade,
+};
 ---
 
 <!doctype html>
@@ -38,30 +60,28 @@ const ogImageUrl = new URL(image, siteUrl);
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="generator" content={Astro.generator} />
 
-        {/* ▼ SEO & OGP Meta Tags */}
+        <link rel="preload" as="image" href={ogImageUrl} />
+
+        {/* SEO & OGP Meta Tags */}
         <title>{title} | 獸酊音 JUUTEION</title>
         <meta name="description" content={description} />
 
-        {/* Facebook / Discord / General */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={siteUrl} />
         <meta property="og:title" content={`${title} | 獸酊音`} />
         <meta property="og:description" content={description} />
         <meta property="og:image" content={ogImageUrl} />
 
-        {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={siteUrl} />
         <meta property="twitter:title" content={`${title} | 獸酊音`} />
         <meta property="twitter:description" content={description} />
         <meta property="twitter:image" content={ogImageUrl} />
 
-        {
-            /* ▼▼▼ 追加: iOSのブラウザバー(アドレスバー)の色を背景色と合わせる ▼▼▼ */
-        }
+        {/* iOSのアドレスバー色指定 */}
         <meta name="theme-color" content="#09090b" />
 
-        <ViewTransitions />
+        <ClientRouter />
     </head>
     <body
         class="bg-background text-text-main antialiased selection:bg-accent-blue selection:text-white"
@@ -78,9 +98,9 @@ const ogImageUrl = new URL(image, siteUrl);
             </div>
         </div>
 
-        {/* ▼▼▼ 修正: transition:animate={fade(...)} を追加 ▼▼▼ */}
+        {/* ▼▼▼ 修正: customTransition を適用 ▼▼▼ */}
         <main
-            transition:animate={fade({ duration: "0.25s" })}
+            transition:animate={customTransition}
             class:list={[
                 "relative z-10 min-h-screen scrollbar-hide",
                 isFluid
