@@ -8,6 +8,7 @@ import logo from "../../assets/logo/jto_logo.svg";
 import { db } from "../../lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 
 import { SOCIAL_LINKS } from "../../config";
 
@@ -62,7 +63,14 @@ export async function getStaticPaths() {
 }
 
 const { event } = Astro.props;
-const contentHtml = await marked.parse(event.body || "");
+const rawHtml = await marked.parse(event.body || "");
+const contentHtml = sanitizeHtml(rawHtml, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]), // 画像などは許可する設定
+    allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        "*": ["class", "style"], // 必要ならクラスやスタイルも許可
+    },
+});
 
 const statusData = getEventStatus(
     event.date,

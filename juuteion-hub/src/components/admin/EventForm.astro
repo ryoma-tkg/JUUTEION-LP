@@ -1295,5 +1295,27 @@ const STYLES = {
                 submitBtn.innerHTML = originalText;
             }
         });
+
+        let isDirty = false;
+        const inputs = form.querySelectorAll("input, textarea, select");
+
+        inputs.forEach((input) => {
+            input.addEventListener("change", () => {
+                isDirty = true;
+            });
+        });
+
+        // 保存ボタンを押したときは警告を出さない
+        form.addEventListener("submit", () => {
+            isDirty = false;
+        });
+
+        window.addEventListener("beforeunload", (e) => {
+            if (isDirty) {
+                e.preventDefault();
+                // 多くのブラウザでメッセージは表示されませんが、ダイアログは出ます
+                e.returnValue = "";
+            }
+        });
     });
 </script>
