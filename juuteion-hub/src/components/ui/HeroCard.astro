@@ -152,7 +152,7 @@ const isCompact = mode === "compact";
                 {/* Meta */}
                 {
                     !isCompact && (
-                        <div class="flex items-center gap-4 text-xs font-bold text-zinc-500 font-en tracking-widest uppercase">
+                        <div class="flex items-center gap-4 text-xs font-bold text-zinc-400 font-en tracking-widest uppercase">
                             <span class="flex items-center gap-2 text-zinc-300">
                                 <span class="w-1.5 h-1.5 rounded-full bg-accent-yellow" />
                                 {date}
@@ -169,7 +169,7 @@ const isCompact = mode === "compact";
                 {
                     isCompact && (
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-[10px] font-bold text-zinc-400 font-en tracking-wider">
+                            <div class="flex items-center gap-2 text-xs font-bold text-zinc-400 font-en tracking-wider">
                                 <span>{date}</span>
                                 <span class="text-zinc-700">/</span>
                                 <span>{time}</span>
@@ -220,12 +220,13 @@ const isCompact = mode === "compact";
             {
                 isCompact && (
                     <div class="flex items-end justify-between mt-auto pt-2 border-t border-zinc-800">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-zinc-500 font-en bg-zinc-800/50 px-1.5 py-0.5 rounded border border-zinc-800">
-                                {place}
+                        <div class="flex items-center gap-2 font-bold text-zinc-300">
+                            {/* 修正: バッジスタイルを廃止し、テキストのみ(@表記)に変更 */}
+                            <span class="text-xs font-en tracking-wider">
+                                @ {place}
                             </span>
                         </div>
-                        <div class="text-xs font-bold text-zinc-300 font-en">
+                        <div class="text-xs font-bold font-en text-zinc-300">
                             {price}
                         </div>
                     </div>
