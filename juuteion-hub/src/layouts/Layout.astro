@@ -4,6 +4,10 @@ import "../styles/global.css";
 import { Image } from "astro:assets";
 import logoImage from "../assets/logo/jto_logo.svg";
 
+// ▼▼▼ 追加: 指定された画像をデフォルト定数として定義 ▼▼▼
+const DEFAULT_OG_IMAGE =
+    "https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/ogp%2Fogp.webp?alt=media&token=e2a48e1f-0431-446c-aceb-c59d3f0dfa31";
+
 interface Props {
     title: string;
     description?: string;
@@ -13,10 +17,15 @@ interface Props {
 
 const {
     title,
-    description = "JUUTEION Event Hub",
-    image,
+    description = "非日常なケモナーのためのDJパーティー︎︎獸酊音",
+    // ▼▼▼ 変更: 画像が渡されなかった場合、上記のデフォルト画像を使用する設定に変更 ▼▼▼
+    image = DEFAULT_OG_IMAGE,
     isFluid = false,
 } = Astro.props;
+
+// ▼▼▼ 追加: 画像URLを絶対パスに変換する処理（念のため） ▼▼▼
+// 外部URL(https～)の場合はそのまま、内部パス(/～)の場合はドメインを付与して変換します
+const resolvedImage = new URL(image, Astro.url).href;
 ---
 
 <!doctype html>
@@ -53,13 +62,14 @@ const {
         <meta property="og:type" content="website" />
         <meta property="og:url" content={Astro.url} />
         <meta property="og:site_name" content="獸酊音 JUUTEION" />
-        {image && <meta property="og:image" content={image} />}
+
+        <meta property="og:image" content={resolvedImage} />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@JUU_TEI_ON_25" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
-        {image && <meta name="twitter:image" content={image} />}
+        <meta name="twitter:image" content={resolvedImage} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -109,9 +119,6 @@ const {
             id="app-loader"
             class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-zinc-950 transition-opacity duration-1000 ease-out pointer-events-none opacity-0"
         >
-            {
-                /* ▼ 変更: バーとテキストを削除、ロゴのみにしてアニメーション適用 */
-            }
             <div class="w-32 animate-logo-shimmer">
                 <Image
                     src={logoImage}
