@@ -6,6 +6,6 @@ export const SITE_CONFIG = {
 export const SOCIAL_LINKS = {
     // ここに実際のURLを入れてください
     x: "https://x.com/JUU_TEI_ON_25",
-    instagram: "#",
-    vrcGroup: "#", // VRChatのグループページURL
+    instagram: "https://www.instagram.com/juuteion.25",
+    vrcGroup: "https://vrc.group/JTO.2431", // VRChatのグループページURL
 };
