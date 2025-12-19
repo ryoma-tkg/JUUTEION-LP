@@ -2,30 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer utilities {
-
-    /* タイムテーブルのアクティブインジケーター用アニメーション */
-    @keyframes signal-pulse {
-        0% {
-            background-color: #0097e0;
-            box-shadow: 0 0 10px #0097e0;
-        }
-
-        50% {
-            background-color: #FEE100;
-            box-shadow: 0 0 15px #FEE100;
-        }
-
-        100% {
-            background-color: #e5177c;
-            box-shadow: 0 0 10px #e5177c;
-        }
-    }
-
-    .animate-signal {
-        animation: signal-pulse 3s infinite alternate;
-    }
+    /* ここにあったアニメーション定義は Timetable.astro に移動したため削除しました */
 }
 
 /* Markdown Styles */
@@ -50,68 +28,12 @@
     @apply text-zinc-400 leading-relaxed mb-6 font-sans text-base;
 }
 
-/* ... (Remaining styles are the same) ... */
 .prose ul {
     @apply list-none pl-0 space-y-0 my-8 ml-2 relative;
     border-left: none;
 }
 
-/* ... */
-
-.prose ul li {
-    @apply pl-0 py-4 relative flex items-baseline font-bold transition-opacity duration-500;
-    opacity: 0.6;
-    /* デフォルトは少し暗く */
-}
-
-/* 現在進行中のアクト（activeクラス） */
-.prose ul li.active {
-    opacity: 1;
-}
-
-.prose ul li::after {
-    content: "";
-    @apply absolute left-[3px] w-[1px] bg-timeline;
-    top: 0;
-    height: 100%;
-    z-index: 0;
-}
-
-.prose ul li:first-child::after {
-    @apply top-6;
-    height: calc(100% - 1.5rem);
-}
-
-.prose ul li:last-child::after {
-    top: 0;
-    @apply h-6;
-}
-
-.prose ul li::before {
-    content: "";
-    @apply absolute left-0 top-6 w-2 h-2 rounded-full bg-timeline ring-4 ring-zinc-950 transition-colors duration-300 z-10;
-}
-
-.prose ul li:hover::before {
-    @apply bg-accent-blue;
-}
-
-/* アクティブ時のインジケーター */
-.prose ul li.active::before {
-    @apply animate-signal ring-0;
-    width: 10px;
-    height: 10px;
-    left: -1px;
-}
-
-/* アクティブ時の時間表示 */
-.prose ul li.active strong {
-    @apply text-accent-red drop-shadow-md;
-}
-
-.prose ul li strong {
-    @apply text-white font-en text-lg leading-none mr-6 w-[80px] shrink-0 text-right transition-colors duration-300;
-}
+/* 以前ここにあったタイムテーブル用のスタイル (.prose ul li ...) はすべて削除しました */
 
 /* Table Styles for Price List */
 .prose table {

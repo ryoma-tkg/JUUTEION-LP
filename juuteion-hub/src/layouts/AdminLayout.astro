@@ -83,29 +83,23 @@ const { title } = Astro.props;
         </main>
 
         <script>
-            // ▼ 必要なモジュールをすべてインポート
-            import { auth, functions } from "../lib/firebase/client";
+            import { auth, functions, db } from "../lib/firebase/client"; // dbを追加
             import { onAuthStateChanged, signOut } from "firebase/auth";
             import { httpsCallable } from "firebase/functions";
+            import { doc, getDoc } from "firebase/firestore"; // Firestore関連を追加
 
             console.log("🚀 [AdminLayout] script loaded. Waiting for auth...");
 
             const initAuth = () => {
                 console.log("🔄 [AdminLayout] initAuth started");
-
                 const userEmailSpan = document.getElementById("user-email");
                 const userInfoDiv = document.getElementById("user-info");
                 const logoutBtn = document.getElementById("logout-btn");
                 const deployBtn = document.getElementById("deploy-btn");
 
-                const ALLOWED_EMAILS = [
-                    "takagi.buckup@gmail.com",
-                    "juuteion.events@gmail.com",
-                ];
+                // ▼ 修正: ソースコードへのメールアドレスのベタ書きを削除
 
-                // ▼ 型エラー回避のため、ローカル変数に代入
                 const authInstance = auth;
-
                 if (!authInstance) {
                     console.error(
                         "❌ [AdminLayout] Firebase Auth is NOT initialized!",
@@ -113,8 +107,7 @@ const { title } = Astro.props;
                     return;
                 }
 
-                // 認証状態の監視
-                onAuthStateChanged(authInstance, (user) => {
+                onAuthStateChanged(authInstance, async (user) => {
                     const currentPath = window.location.pathname;
                     console.log(
                         "👤 [AdminLayout] Auth State Changed:",
@@ -122,23 +115,40 @@ const { title } = Astro.props;
                     );
 
                     if (user) {
-                        // ログイン中
                         console.log(
-                            "✅ [AdminLayout] User is logged in. Checking permissions...",
+                            "✅ [AdminLayout] User is logged in. Checking permissions via Firestore...",
                         );
 
-                        if (!ALLOWED_EMAILS.includes(user.email || "")) {
-                            console.warn(
-                                "⛔ [AdminLayout] Access Denied for:",
-                                user.email,
+                        // ▼ 修正: Firestoreのadminsコレクションを確認
+                        try {
+                            const adminRef = doc(
+                                db,
+                                "admins",
+                                user.email || "unknown",
                             );
-                            alert("アクセス権限がありません。");
-                            signOut(authInstance);
+                            const adminSnap = await getDoc(adminRef);
+
+                            if (!adminSnap.exists()) {
+                                console.warn(
+                                    "⛔ [AdminLayout] Access Denied (Not in admins list):",
+                                    user.email,
+                                );
+                                alert(
+                                    "アクセス権限がありません。（adminsコレクション未登録）",
+                                );
+                                await signOut(authInstance);
+                                return;
+                            }
+                        } catch (e) {
+                            console.error(
+                                "🔥 [AdminLayout] Permission Check Error:",
+                                e,
+                            );
+                            alert("権限チェックに失敗しました。");
                             return;
                         }
 
                         console.log("🆗 [AdminLayout] Access Granted.");
-
                         if (userEmailSpan)
                             userEmailSpan.innerText = user.email || "";
                         if (userInfoDiv) {
@@ -147,11 +157,9 @@ const { title } = Astro.props;
                         }
 
                         if (currentPath === "/admin/login") {
-                            console.log("Redirecting to /admin...");
                             window.location.href = "/admin";
                         }
                     } else {
-                        // 未ログイン
                         console.log(
                             "⚪ [AdminLayout] No user. Redirecting to login if needed.",
                         );

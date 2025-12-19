@@ -1,0 +1,214 @@
+---
+interface Props {
+    items: {
+        time: string;
+        content: string;
+        active?: boolean;
+    }[];
+    eventDate?: Date;
+}
+
+const { items = [], eventDate } = Astro.props;
+const eventDateIso = eventDate ? eventDate.toISOString() : "";
+---
+
+<div class="timetable-wrapper" data-event-date={eventDateIso}>
+    <ul class="timetable-list">
+        {
+            items.map((item) => (
+                <li
+                    data-time={item.time}
+                    class:list={[{ active: item.active }]}
+                >
+                    <strong class="font-en">{item.time}</strong>
+                    <span>{item.content}</span>
+                </li>
+            ))
+        }
+    </ul>
+</div>
+
+<style>
+    /* Scoped Styles */
+    .timetable-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 2rem 0 2rem 0.5rem;
+        position: relative;
+    }
+
+    .timetable-list li {
+        padding: 1rem 0;
+        position: relative;
+        display: flex;
+        align-items: center;
+        font-weight: bold;
+        transition: opacity 0.5s;
+        opacity: 0.6;
+        color: #a1a1aa;
+        transition:
+            opacity 0.5s,
+            color 0.5s;
+    }
+
+    /* アクティブ状態 */
+    .timetable-list li.active {
+        opacity: 1;
+        color: #ffffff;
+    }
+
+    /* Timeline Line */
+    .timetable-list li::after {
+        content: "";
+        position: absolute;
+        /* ▼ 修正: 3px -> 3.5px に変更 */
+        /* ドット(8px)の中心が4pxなので、線(1px)の中心も4pxにするために3.5px配置にします */
+        left: 3.5px;
+        top: 0;
+        height: 100%;
+        width: 1px;
+        background-color: #27272a; /* zinc-800 */
+        z-index: 0;
+    }
+
+    /* アクティブ時の線の色修正 */
+    .timetable-list li.active::after {
+        background-color: rgba(39, 39, 42, 0.6);
+    }
+
+    /* 最初の要素と最後の要素の線 */
+    .timetable-list li:first-child::after {
+        top: 50%;
+        height: 50%;
+    }
+
+    .timetable-list li:last-child::after {
+        top: 0;
+        height: 50%;
+    }
+
+    /* Dots */
+    .timetable-list li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0.5rem; /* 8px */
+        height: 0.5rem;
+        border-radius: 9999px;
+        background-color: #27272a;
+        box-shadow: 0 0 0 4px #09090b;
+        transition: background-color 0.3s;
+        z-index: 10;
+    }
+
+    .timetable-list li:hover::before {
+        background-color: #0097e0;
+    }
+
+    /* Active Indicator */
+    .timetable-list li.active::before {
+        width: 10px;
+        height: 10px;
+        left: -1px; /* 10pxの中心(5px)と線の中心(4px)を合わせるため、-1pxで配置 */
+        box-shadow: none;
+        animation: signal-pulse 3s infinite alternate;
+    }
+
+    /* Time Text */
+    .timetable-list li strong {
+        color: #ffffff;
+        font-size: 1.125rem;
+        line-height: 1;
+        margin-right: 1.5rem;
+        width: 80px;
+        flex-shrink: 0;
+        text-align: right;
+        transition:
+            color 0.3s,
+            text-shadow 0.3s;
+    }
+
+    .timetable-list li.active strong {
+        color: #ffffff;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Content Text (Name) */
+    .timetable-list li span {
+        transition: color 0.3s;
+        /* 重心補正 */
+        padding-top: 2.5px;
+        line-height: 1.2;
+    }
+
+    .timetable-list li.active span {
+        color: #ffffff;
+    }
+
+    @keyframes signal-pulse {
+        0% {
+            background-color: #0097e0;
+            box-shadow: 0 0 10px #0097e0;
+        }
+        50% {
+            background-color: #fee100;
+            box-shadow: 0 0 15px #fee100;
+        }
+        100% {
+            background-color: #e5177c;
+            box-shadow: 0 0 10px #e5177c;
+        }
+    }
+</style>
+
+<script>
+    const updateTimetable = () => {
+        const wrappers = document.querySelectorAll(".timetable-wrapper");
+
+        wrappers.forEach((wrapper) => {
+            const eventDateStr = wrapper.getAttribute("data-event-date");
+            if (!eventDateStr) return;
+
+            const now = new Date();
+            const eventDate = new Date(eventDateStr);
+            const isSameDay =
+                eventDate.getFullYear() === now.getFullYear() &&
+                eventDate.getMonth() === now.getMonth() &&
+                eventDate.getDate() === now.getDate();
+
+            if (!isSameDay) return;
+
+            const items = wrapper.querySelectorAll("li");
+            let currentItem: HTMLElement | null = null;
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+            items.forEach((item) => {
+                item.classList.remove("active");
+                const timeStr = item.getAttribute("data-time");
+                if (timeStr) {
+                    const [h, m] = timeStr.split(":").map(Number);
+                    const itemMinutes = h * 60 + m;
+                    if (itemMinutes <= currentMinutes) {
+                        currentItem = item as HTMLElement;
+                    }
+                }
+            });
+
+            if (currentItem) {
+                (currentItem as HTMLElement).classList.add("active");
+            }
+        });
+    };
+
+    document.addEventListener("astro:page-load", () => {
+        updateTimetable();
+        const interval = setInterval(updateTimetable, 60000);
+        document.addEventListener(
+            "astro:before-swap",
+            () => clearInterval(interval),
+            { once: true },
+        );
+    });
+</script>

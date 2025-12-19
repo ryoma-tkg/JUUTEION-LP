@@ -3,12 +3,12 @@ import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://juuteion.club/', // ← あなたの公開URLに書き換えてください
+  site: 'https://juuteion.club/',
 
-  // ▼▼▼ 追加: これを入れるだけで、リンクの先読みが有効になり遷移が爆速になります ▼▼▼
+  // ▼ 修正: prefetchAllを削除し、デフォルト設定（data-astro-prefetchが付いたもののみ）に戻す
+  // これにより、意図しない大量通信を防ぎます
   prefetch: {
-    prefetchAll: true,
-    defaultStrategy: 'viewport', // 画面に入ったリンクを自動で読み込む設定
+    defaultStrategy: 'viewport',
   },
 
   integrations: [tailwind()],

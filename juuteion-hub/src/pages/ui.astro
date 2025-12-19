@@ -8,13 +8,25 @@ import Tag from "../components/ui/Tag.astro";
 import SectionHeader from "../components/ui/SectionHeader.astro"; // 追加
 import Input from "../components/ui/Input.astro";
 import MemberCard from "../components/ui/MemberCard.astro";
+import Timetable from "../components/ui/Timetable.astro"; // ▼ 追加
+
+import avatarPlaceholder from "../assets/images/teaser.jpg";
+import topBg from "../assets/images/top-bg.jpg";
+
+// ▼ タイムテーブルのデモ用データ（現在の時間を中心に生成して光らせる）
+const now = new Date();
+const pad = (n: number) => n.toString().padStart(2, "0");
+const demoTimetable = [
+    { time: "23:00", content: "OPEN / DJ START", active: true }, // ← これが光ります
+    { time: "23:30", content: "Guest DJ Act" },
+    { time: "00:30", content: "Main Act (Live)" },
+    { time: "04:30", content: "CLOSE" },
+];
 
 // テスト用に既存画像をアバターとして使い回します
-import avatarPlaceholder from "../assets/images/teaser.jpg";
 
 // ▼追加: 画像をインポート (型エラー回避のため)
 // ※ src/assets/images/top-bg.jpg が存在することを確認してください
-import topBg from "../assets/images/top-bg.jpg";
 ---
 
 {/* isFluid=true を設定し、左右分割レイアウトを有効化 */}
@@ -180,6 +192,29 @@ import topBg from "../assets/images/top-bg.jpg";
                                 accentColor="yellow"
                             />
                         </div>
+                    </div>
+                </section>
+
+                <section id="timetable" class="space-y-6">
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-zinc-500 rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Timetable System
+                        </h2>
+                    </div>
+                    <div
+                        class="pl-6 bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800"
+                    >
+                        <p class="text-xs text-zinc-500 mb-4 font-mono">
+                            ※プレビュー用（固定表示）
+                        </p>
+
+                        {
+                            /* ▼ 修正: eventDateを渡さないことで、自動更新を無効化し、強制アクティブ表示を維持 */
+                        }
+                        <Timetable items={demoTimetable} />
                     </div>
                 </section>
 

@@ -3,12 +3,14 @@ import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
+import Timetable from "../../components/ui/Timetable.astro";
 import logo from "../../assets/logo/jto_logo.svg";
-// ▼ Firebase & Markdown
+
 import { db } from "../../lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
+import { extractTimetable } from "../../lib/utils/timetable";
 
 import { SOCIAL_LINKS } from "../../config";
 import { getEventStatus } from "../../lib/utils/eventStatus";
@@ -69,32 +71,42 @@ export async function getStaticPaths() {
 }
 
 const { event } = Astro.props;
-const rawHtml = await marked.parse(event.body || "");
+
+// タイムテーブル抽出処理
+const { timetable, cleanMarkdown } = extractTimetable(event.body || "");
+
+// ▼ 修正: breaks: true を追加して、改行をそのまま反映させるように変更
+const rawHtml = await marked.parse(cleanMarkdown, { breaks: true });
+
 const contentHtml = sanitizeHtml(rawHtml, {
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]), // 画像などは許可する設定
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
     allowedAttributes: {
         ...sanitizeHtml.defaults.allowedAttributes,
-        "*": ["class", "style"], // 必要ならクラスやスタイルも許可
+        "*": ["class", "style"],
     },
 });
+
 const statusData = getEventStatus(
     event.date,
     event.time,
     event.closeTime,
     event.status,
 );
-// ▼ 追加: TOPページと同じ背景スタイル生成ロジック
+
 const getBgStyle = (imgUrl: string) => {
     if (imgUrl) return `background-image: url('${imgUrl}')`;
     return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%; background-repeat: no-repeat; opacity: 0.5;`;
 };
 const bgStyle = getBgStyle(event.mainVisual);
+
 const now = new Date();
 const isDeadlinePassed = event.ticketDeadline
     ? now > event.ticketDeadline
     : false;
 const canReserve = event.ticketLink && !isDeadlinePassed;
+
 const isDev = import.meta.env.DEV;
+
 const seoDescription = `${formatDateJST(event.date)} @ ${event.place} | ${event.subTitle || ""} | ${event.price}`;
 const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
 ---
@@ -106,11 +118,10 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
     image={seoImage}
 >
     <div class="flex flex-col lg:flex-row min-h-screen">
-        {/* [LEFT COLUMN] Visual Only (PC) - TOPページ仕様に合わせる */}
+        {/* [LEFT COLUMN] Visual Only (PC) */}
         <aside
             class="hidden lg:flex flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-zinc-950 flex-col items-center justify-center text-center p-12 text-white space-y-6"
         >
-            {/* コンテンツ */}
             <img src={logo.src} alt="JUUTEION" class="w-auto h-24 opacity-80" />
         </aside>
 
@@ -351,6 +362,22 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                     </div>
                 </section>
 
+                {
+                    timetable.length > 0 && (
+                        <section>
+                            <SectionHeader
+                                title="Timetable"
+                                accentColor="muted"
+                                class="mb-6"
+                            />
+                            <Timetable
+                                items={timetable}
+                                eventDate={event.date}
+                            />
+                        </section>
+                    )
+                }
+
                 {/* Markdown Body */}
                 <div
                     id="event-body"
@@ -414,7 +441,6 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                         accentColor="subtle"
                         titleClass="text-white"
                     />
-                    {/* Grid Layout: 3 items (X, Instagram, VRC) */}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Official X */}
                         <a
@@ -575,7 +601,8 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
 
             {/* Footer Sticky Button */}
             {
-                statusData.isLive && event.ticketLink && (
+                /* ▼ 修正: isLive(開催中)だけでなく、アーカイブでなければ表示するように変更 */
+                event.status !== "archive" && event.ticketLink && (
                     <div class="sticky bottom-0 left-0 right-0 z-50 p-6 pb-8 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
                         <div class="w-full pointer-events-auto">
                             {canReserve ? (
@@ -584,7 +611,7 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                     href={event.ticketLink}
                                     class="w-full"
                                 >
-                                    TwiPlaで参加表明する
+                                    TwiPlaで参加する
                                     {event.ticketDeadline && (
                                         <span class="text-[10px] ml-2 opacity-70 font-normal">
                                             (〆{" "}
@@ -617,38 +644,3 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
         </main>
     </div>
 </Layout>
-
-<script>
-    document.addEventListener("astro:page-load", () => {
-        const body = document.getElementById("event-body");
-        if (!body) return;
-
-        const eventDateStr = body.getAttribute("data-event-date");
-        if (!eventDateStr) return;
-
-        const eventDate = new Date(eventDateStr);
-        const now = new Date();
-        const isSameDay =
-            eventDate.getFullYear() === now.getFullYear() &&
-            eventDate.getMonth() === now.getMonth() &&
-            eventDate.getDate() === now.getDate();
-        if (!isSameDay) return;
-
-        const items = body.querySelectorAll("ul li");
-        let currentItem: HTMLElement | null = null;
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        items.forEach((item) => {
-            const timeStr = item.querySelector("strong")?.innerText;
-            if (timeStr) {
-                const [h, m] = timeStr.split(":").map(Number);
-                const itemMinutes = h * 60 + m;
-                if (itemMinutes <= currentMinutes) {
-                    currentItem = item as HTMLElement;
-                }
-            }
-        });
-        if (currentItem) {
-            (currentItem as HTMLElement).classList.add("active");
-        }
-    });
-</script>
