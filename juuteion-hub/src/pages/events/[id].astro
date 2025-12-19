@@ -3,12 +3,15 @@ import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
+import Timetable from "../../components/ui/Timetable.astro"; // ▼ 追加
 import logo from "../../assets/logo/jto_logo.svg";
+
 // ▼ Firebase & Markdown
 import { db } from "../../lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
+import { extractTimetable } from "../../lib/utils/timetable"; // ▼ 追加
 
 import { SOCIAL_LINKS } from "../../config";
 import { getEventStatus } from "../../lib/utils/eventStatus";
@@ -69,7 +72,12 @@ export async function getStaticPaths() {
 }
 
 const { event } = Astro.props;
-const rawHtml = await marked.parse(event.body || "");
+
+// ▼ 修正: タイムテーブル抽出処理
+const { timetable, cleanMarkdown } = extractTimetable(event.body || "");
+
+// ▼ 修正: タイムテーブル除去済みのMarkdownをパース
+const rawHtml = await marked.parse(cleanMarkdown);
 const contentHtml = sanitizeHtml(rawHtml, {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]), // 画像などは許可する設定
     allowedAttributes: {
@@ -77,24 +85,29 @@ const contentHtml = sanitizeHtml(rawHtml, {
         "*": ["class", "style"], // 必要ならクラスやスタイルも許可
     },
 });
+
 const statusData = getEventStatus(
     event.date,
     event.time,
     event.closeTime,
     event.status,
 );
+
 // ▼ 追加: TOPページと同じ背景スタイル生成ロジック
 const getBgStyle = (imgUrl: string) => {
     if (imgUrl) return `background-image: url('${imgUrl}')`;
     return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%; background-repeat: no-repeat; opacity: 0.5;`;
 };
 const bgStyle = getBgStyle(event.mainVisual);
+
 const now = new Date();
 const isDeadlinePassed = event.ticketDeadline
     ? now > event.ticketDeadline
     : false;
 const canReserve = event.ticketLink && !isDeadlinePassed;
+
 const isDev = import.meta.env.DEV;
+
 const seoDescription = `${formatDateJST(event.date)} @ ${event.place} | ${event.subTitle || ""} | ${event.price}`;
 const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
 ---
@@ -350,6 +363,23 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                         </div>
                     </div>
                 </section>
+
+                {/* ▼ 追加: Timetable Section (データがある場合のみ表示) */}
+                {
+                    timetable.length > 0 && (
+                        <section>
+                            <SectionHeader
+                                title="Timetable"
+                                accentColor="muted"
+                                class="mb-6"
+                            />
+                            <Timetable
+                                items={timetable}
+                                eventDate={event.date}
+                            />
+                        </section>
+                    )
+                }
 
                 {/* Markdown Body */}
                 <div
@@ -617,38 +647,3 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
         </main>
     </div>
 </Layout>
-
-<script>
-    document.addEventListener("astro:page-load", () => {
-        const body = document.getElementById("event-body");
-        if (!body) return;
-
-        const eventDateStr = body.getAttribute("data-event-date");
-        if (!eventDateStr) return;
-
-        const eventDate = new Date(eventDateStr);
-        const now = new Date();
-        const isSameDay =
-            eventDate.getFullYear() === now.getFullYear() &&
-            eventDate.getMonth() === now.getMonth() &&
-            eventDate.getDate() === now.getDate();
-        if (!isSameDay) return;
-
-        const items = body.querySelectorAll("ul li");
-        let currentItem: HTMLElement | null = null;
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        items.forEach((item) => {
-            const timeStr = item.querySelector("strong")?.innerText;
-            if (timeStr) {
-                const [h, m] = timeStr.split(":").map(Number);
-                const itemMinutes = h * 60 + m;
-                if (itemMinutes <= currentMinutes) {
-                    currentItem = item as HTMLElement;
-                }
-            }
-        });
-        if (currentItem) {
-            (currentItem as HTMLElement).classList.add("active");
-        }
-    });
-</script>
