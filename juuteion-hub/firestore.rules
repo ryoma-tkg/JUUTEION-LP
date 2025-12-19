@@ -1,19 +1,21 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 許可する管理者のメールアドレスリスト
-    // ※ ここにあなたのメールアドレスを記述してください
+    
+    // ▼ 修正: メールアドレスのベタ書きをやめ、adminsコレクションの存在チェックに変更
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.email == 'takagi.buckup@gmail.com' || 
-        request.auth.token.email == 'juuteion.events@gmail.com'
-      );
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
+    // adminsコレクション自体の読み取りは、ログイン済みなら許可（判定に使用するため）
+    match /admins/{email} {
+      allow read: if request.auth != null && request.auth.token.email == email;
+      // 管理者追加はコンソールから行う運用とする（安全のためwriteは禁止）
     }
 
     match /events/{eventId} {
-      // 読み取りは誰でもOK
       allow read: if true;
-      // 書き込み・削除は管理者のみ
       allow write: if isAdmin();
     }
   }

@@ -9,7 +9,6 @@ interface Props {
 const { mode, eventId } = Astro.props;
 const title = mode === "new" ? "New Event" : "Edit Event";
 const submitLabel = mode === "new" ? "PUBLISH EVENT" : "UPDATE EVENT";
-
 // スタイル定義
 const STYLES = {
     section:
@@ -768,83 +767,92 @@ const STYLES = {
         });
     };
 
-    // ▼ データ消失防止版 Markdown Parser
+    // ▼ データ消失防止版 Markdown Parser (エラーハンドリング強化)
     const parseMarkdown = (body: string) => {
-        const lines = body.split("\n");
-        let mode = "intro";
-        const introInput = getEl("body-intro") as HTMLTextAreaElement;
-        const notesInput = getEl("body-notes") as HTMLTextAreaElement;
-        const ttContainer = getEl("tt-container");
-        const priceContainer = getEl("price-container");
+        try {
+            const lines = body.split("\n");
+            let mode = "intro";
+            const introInput = getEl("body-intro") as HTMLTextAreaElement;
+            const notesInput = getEl("body-notes") as HTMLTextAreaElement;
+            const ttContainer = getEl("tt-container");
+            const priceContainer = getEl("price-container");
 
-        if (ttContainer) ttContainer.innerHTML = "";
-        if (priceContainer) priceContainer.innerHTML = "";
+            if (ttContainer) ttContainer.innerHTML = "";
+            if (priceContainer) priceContainer.innerHTML = "";
 
-        lines.forEach((line) => {
-            const trimmed = line.trim();
-            // セクション切り替え判定
-            if (trimmed.startsWith("## TIMETABLE")) {
-                mode = "timetable";
-                return;
-            }
-            if (trimmed.startsWith("## ENTRANCE FEE")) {
-                mode = "price";
-                return;
-            }
-            if (trimmed.startsWith("## ATTENTION")) {
-                mode = "attention";
-                return;
-            }
-
-            // 各モードでの処理
-            if (mode === "intro") {
-                introInput.value += line + "\n";
-            } else if (mode === "attention") {
-                notesInput.value += line + "\n";
-            } else if (mode === "timetable") {
-                const match = trimmed.match(/^-\s*\*\*(.*?)\*\*\s*(.*)$/);
-                if (match) {
-                    addRow(ttContainer, "tmpl-tt-row", {
-                        time: match[1],
-                        content: match[2],
-                    });
-                } else if (trimmed !== "") {
-                    // ▼ パースできない行は「ATTENTION」に退避（消失防止）
-                    notesInput.value += `[Unknown Line from Timetable]: ${line}\n`;
+            lines.forEach((line) => {
+                const trimmed = line.trim();
+                // セクション切り替え判定
+                if (trimmed.startsWith("## TIMETABLE")) {
+                    mode = "timetable";
+                    return;
                 }
-            } else if (mode === "price") {
-                // テーブル行の判定
-                if (
-                    trimmed.startsWith("|") &&
-                    !trimmed.includes("---") &&
-                    !trimmed.includes("TICKET TYPE")
-                ) {
-                    const parts = trimmed
-                        .split("|")
-                        .map((s) => s.trim())
-                        .filter((s) => s);
-                    if (parts.length >= 2) {
-                        addRow(priceContainer, "tmpl-price-row", {
-                            type: parts[0],
-                            price: parts[1],
+                if (trimmed.startsWith("## ENTRANCE FEE")) {
+                    mode = "price";
+                    return;
+                }
+                if (trimmed.startsWith("## ATTENTION")) {
+                    mode = "attention";
+                    return;
+                }
+
+                // 各モードでの処理
+                if (mode === "intro") {
+                    introInput.value += line + "\n";
+                } else if (mode === "attention") {
+                    notesInput.value += line + "\n";
+                } else if (mode === "timetable") {
+                    const match = trimmed.match(/^-\s*\*\*(.*?)\*\*\s*(.*)$/);
+                    if (match) {
+                        addRow(ttContainer, "tmpl-tt-row", {
+                            time: match[1],
+                            content: match[2],
                         });
                     } else if (trimmed !== "") {
-                        // ▼ パースできない行は「ATTENTION」に退避
+                        // ▼ パースできない行は「ATTENTION」に退避（消失防止）
+                        notesInput.value += `[Unknown Line from Timetable]: ${line}\n`;
+                    }
+                } else if (mode === "price") {
+                    // テーブル行の判定
+                    if (
+                        trimmed.startsWith("|") &&
+                        !trimmed.includes("---") &&
+                        !trimmed.includes("TICKET TYPE")
+                    ) {
+                        const parts = trimmed
+                            .split("|")
+                            .map((s) => s.trim())
+                            .filter((s) => s);
+                        if (parts.length >= 2) {
+                            addRow(priceContainer, "tmpl-price-row", {
+                                type: parts[0],
+                                price: parts[1],
+                            });
+                        } else if (trimmed !== "") {
+                            // ▼ パースできない行は「ATTENTION」に退避
+                            notesInput.value += `[Unknown Line from Price]: ${line}\n`;
+                        }
+                    } else if (
+                        trimmed !== "" &&
+                        !trimmed.includes("---") &&
+                        !trimmed.includes("TICKET TYPE")
+                    ) {
+                        // ▼ パイプを含まない行も退避
                         notesInput.value += `[Unknown Line from Price]: ${line}\n`;
                     }
-                } else if (
-                    trimmed !== "" &&
-                    !trimmed.includes("---") &&
-                    !trimmed.includes("TICKET TYPE")
-                ) {
-                    // ▼ パイプを含まない行も退避
-                    notesInput.value += `[Unknown Line from Price]: ${line}\n`;
                 }
-            }
-        });
-
-        autoExpand(introInput);
-        autoExpand(notesInput);
+            });
+            autoExpand(introInput);
+            autoExpand(notesInput);
+        } catch (e) {
+            console.error("Markdown Parsing Error:", e);
+            alert(
+                "過去データの読み込み中に一部エラーが発生しました。テキストエリアを確認してください。",
+            );
+            // 最低限の復旧：Introductionにすべて流し込む
+            const introInput = getEl("body-intro") as HTMLTextAreaElement;
+            introInput.value += "\n\n[PARSE ERROR RECOVERY]\n" + body;
+        }
     };
 
     const generateMarkdown = () => {
@@ -927,7 +935,6 @@ const STYLES = {
         if (!container) return;
         const tmpl = getEl(tmplId) as HTMLTemplateElement;
         const clone = tmpl.content.cloneNode(true) as DocumentFragment;
-
         clone
             .querySelector(".btn-remove")
             ?.addEventListener("click", (e) =>
@@ -1075,6 +1082,7 @@ const STYLES = {
                     autoExpand(el as HTMLElement),
                 ),
             );
+
         getEl("add-tt-btn")?.addEventListener("click", () =>
             addRow(getEl("tt-container"), "tmpl-tt-row"),
         );
@@ -1109,6 +1117,7 @@ const STYLES = {
                     const d = data.date.toDate();
                     (getEl("input-date") as HTMLInputElement).value =
                         toJSTDateInputValue(d);
+
                     if (data.time) {
                         const parts = data.time.split(" ");
                         if (parts.length >= 2) {
@@ -1166,6 +1175,7 @@ const STYLES = {
 
                     // Markdownパース実行
                     if (data.body) parseMarkdown(data.body);
+
                     form.dataset.loaded = "true";
                     loading?.classList.add("opacity-0", "pointer-events-none");
                 }
@@ -1227,7 +1237,8 @@ const STYLES = {
                 ) => {
                     if (!file) return null;
                     const blob = await processImage(file);
-                    const refPath = `events/${Date.now()}_${prefix}.webp`;
+                    // ▼ 修正: ファイル名の衝突を避けるため crypto.randomUUID() を使用
+                    const refPath = `events/${Date.now()}_${crypto.randomUUID()}_${prefix}.webp`;
                     const sRef = ref(storage, refPath);
                     await uploadBytes(sRef, blob);
                     return await getDownloadURL(sRef);
@@ -1298,7 +1309,6 @@ const STYLES = {
 
         let isDirty = false;
         const inputs = form.querySelectorAll("input, textarea, select");
-
         inputs.forEach((input) => {
             input.addEventListener("change", () => {
                 isDirty = true;
