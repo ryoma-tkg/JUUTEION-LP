@@ -3,15 +3,14 @@ import Layout from "../../layouts/Layout.astro";
 import Button from "../../components/ui/Button.astro";
 import Tag from "../../components/ui/Tag.astro";
 import SectionHeader from "../../components/ui/SectionHeader.astro";
-import Timetable from "../../components/ui/Timetable.astro"; // ▼ 追加
+import Timetable from "../../components/ui/Timetable.astro";
 import logo from "../../assets/logo/jto_logo.svg";
 
-// ▼ Firebase & Markdown
 import { db } from "../../lib/firebase/client";
 import { collection, getDocs } from "firebase/firestore";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
-import { extractTimetable } from "../../lib/utils/timetable"; // ▼ 追加
+import { extractTimetable } from "../../lib/utils/timetable";
 
 import { SOCIAL_LINKS } from "../../config";
 import { getEventStatus } from "../../lib/utils/eventStatus";
@@ -73,16 +72,17 @@ export async function getStaticPaths() {
 
 const { event } = Astro.props;
 
-// ▼ 修正: タイムテーブル抽出処理
+// タイムテーブル抽出処理
 const { timetable, cleanMarkdown } = extractTimetable(event.body || "");
 
-// ▼ 修正: タイムテーブル除去済みのMarkdownをパース
-const rawHtml = await marked.parse(cleanMarkdown);
+// ▼ 修正: breaks: true を追加して、改行をそのまま反映させるように変更
+const rawHtml = await marked.parse(cleanMarkdown, { breaks: true });
+
 const contentHtml = sanitizeHtml(rawHtml, {
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]), // 画像などは許可する設定
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
     allowedAttributes: {
         ...sanitizeHtml.defaults.allowedAttributes,
-        "*": ["class", "style"], // 必要ならクラスやスタイルも許可
+        "*": ["class", "style"],
     },
 });
 
@@ -93,7 +93,6 @@ const statusData = getEventStatus(
     event.status,
 );
 
-// ▼ 追加: TOPページと同じ背景スタイル生成ロジック
 const getBgStyle = (imgUrl: string) => {
     if (imgUrl) return `background-image: url('${imgUrl}')`;
     return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%; background-repeat: no-repeat; opacity: 0.5;`;
@@ -119,11 +118,10 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
     image={seoImage}
 >
     <div class="flex flex-col lg:flex-row min-h-screen">
-        {/* [LEFT COLUMN] Visual Only (PC) - TOPページ仕様に合わせる */}
+        {/* [LEFT COLUMN] Visual Only (PC) */}
         <aside
             class="hidden lg:flex flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-zinc-950 flex-col items-center justify-center text-center p-12 text-white space-y-6"
         >
-            {/* コンテンツ */}
             <img src={logo.src} alt="JUUTEION" class="w-auto h-24 opacity-80" />
         </aside>
 
@@ -364,7 +362,6 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                     </div>
                 </section>
 
-                {/* ▼ 追加: Timetable Section (データがある場合のみ表示) */}
                 {
                     timetable.length > 0 && (
                         <section>
@@ -444,7 +441,6 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                         accentColor="subtle"
                         titleClass="text-white"
                     />
-                    {/* Grid Layout: 3 items (X, Instagram, VRC) */}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Official X */}
                         <a
@@ -605,7 +601,8 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
 
             {/* Footer Sticky Button */}
             {
-                statusData.isLive && event.ticketLink && (
+                /* ▼ 修正: isLive(開催中)だけでなく、アーカイブでなければ表示するように変更 */
+                event.status !== "archive" && event.ticketLink && (
                     <div class="sticky bottom-0 left-0 right-0 z-50 p-6 pb-8 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
                         <div class="w-full pointer-events-auto">
                             {canReserve ? (
@@ -614,7 +611,7 @@ const seoImage = event.thumbnail || event.mainVisual || "/top-bg.jpg";
                                     href={event.ticketLink}
                                     class="w-full"
                                 >
-                                    TwiPlaで参加表明する
+                                    TwiPlaで参加する
                                     {event.ticketDeadline && (
                                         <span class="text-[10px] ml-2 opacity-70 font-normal">
                                             (〆{" "}

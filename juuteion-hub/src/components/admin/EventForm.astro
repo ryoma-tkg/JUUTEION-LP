@@ -222,13 +222,16 @@ const STYLES = {
 
                     <div class="space-y-8">
                         <div>
+                            {
+                                /* ▼ 修正: font-mono -> font-sans, min-h-[100px] -> min-h-[200px] */
+                            }
                             <Input
                                 label="Introduction"
                                 id="body-intro"
                                 multiline
                                 rows="3"
-                                class="font-mono text-sm leading-relaxed auto-expand min-h-[100px]"
-                                placeholder="イベントの紹介文を入力..."
+                                class="font-sans text-sm leading-relaxed auto-expand min-h-[200px]"
+                                placeholder="イベントの紹介文を入力（改行はそのまま反映されます）"
                             />
                         </div>
 
@@ -271,13 +274,16 @@ const STYLES = {
                         </div>
 
                         <div>
+                            {
+                                /* ▼ 修正: font-mono -> font-sans, min-h-[100px] -> min-h-[150px] */
+                            }
                             <Input
                                 label="Attention / Notes"
                                 id="body-notes"
                                 multiline
                                 rows="3"
-                                class="font-mono text-sm leading-relaxed auto-expand min-h-[100px]"
-                                placeholder="注意事項を入力..."
+                                class="font-sans text-sm leading-relaxed auto-expand min-h-[150px]"
+                                placeholder="注意事項を入力（改行はそのまま反映されます）"
                             />
                         </div>
                     </div>
@@ -447,7 +453,6 @@ const STYLES = {
                         </div>
 
                         {/* Thumbnail */}
-                        {/* ▼ 修正: グリッドを解除し、縦積みに戻しました */}
                         <div class="space-y-4">
                             <div class="space-y-2">
                                 <label class={STYLES.label}
@@ -484,9 +489,6 @@ const STYLES = {
                                 </div>
                             </div>
 
-                            {
-                                /* ▼ 修正: サムネイルの下に配置し、選択肢を変更しました */
-                            }
                             <div class="space-y-2">
                                 <label
                                     class="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2 font-en"
@@ -1110,7 +1112,7 @@ const STYLES = {
                         data.status || "archive";
                     (getEl("input-mapEmbed") as HTMLInputElement).value =
                         data.mapEmbed || "";
-                    // ▼ 画像位置読み込み (デフォルト center 50%)
+                    // 画像位置読み込み (デフォルト center 50%)
                     (getEl("input-imagePosition") as HTMLSelectElement).value =
                         data.imagePosition || "center 50%";
 
@@ -1237,7 +1239,7 @@ const STYLES = {
                 ) => {
                     if (!file) return null;
                     const blob = await processImage(file);
-                    // ▼ 修正: ファイル名の衝突を避けるため crypto.randomUUID() を使用
+                    // ファイル名の衝突を避けるため crypto.randomUUID() を使用
                     const refPath = `events/${Date.now()}_${crypto.randomUUID()}_${prefix}.webp`;
                     const sRef = ref(storage, refPath);
                     await uploadBytes(sRef, blob);
@@ -1260,7 +1262,7 @@ const STYLES = {
                     place: formData.get("place"),
                     address: formData.get("address"),
                     mapEmbed: formData.get("mapEmbed"),
-                    // ▼ 画像位置情報保存
+                    // 画像位置情報保存
                     imagePosition: (
                         getEl("input-imagePosition") as HTMLSelectElement
                     ).value,
@@ -1315,7 +1317,6 @@ const STYLES = {
             });
         });
 
-        // 保存ボタンを押したときは警告を出さない
         form.addEventListener("submit", () => {
             isDirty = false;
         });
@@ -1323,7 +1324,6 @@ const STYLES = {
         window.addEventListener("beforeunload", (e) => {
             if (isDirty) {
                 e.preventDefault();
-                // 多くのブラウザでメッセージは表示されませんが、ダイアログは出ます
                 e.returnValue = "";
             }
         });
