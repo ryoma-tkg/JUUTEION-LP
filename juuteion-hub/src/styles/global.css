@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+    /* ここにあったアニメーション定義は Timetable.astro に移動したため削除しました */
+}
+
+/* Markdown Styles */
+/* 詳細ページのMarkdown表示用スタイル */
+
+.prose h2 {
+    /* mt-20 -> mt-12 に短縮 */
+    @apply text-2xl font-bold text-white mt-12 mb-6 font-en uppercase tracking-widest flex items-center gap-3 leading-none;
+}
+
+.prose h2::before {
+    content: "";
+    @apply block w-1 h-5 bg-zinc-700 rounded-full;
+}
+
+.prose h3 {
+    /* mt-12 -> mt-8 に短縮 */
+    @apply text-lg font-bold text-zinc-200 mt-8 mb-4 font-sans border-b border-subtle pb-2 inline-block pr-8;
+}
+
+.prose p {
+    @apply text-zinc-400 leading-relaxed mb-6 font-sans text-base;
+}
+
+.prose ul {
+    @apply list-none pl-0 space-y-0 my-8 ml-2 relative;
+    border-left: none;
+}
+
+/* 以前ここにあったタイムテーブル用のスタイル (.prose ul li ...) はすべて削除しました */
+
+/* Table Styles for Price List */
+.prose table {
+    @apply w-full border-separate border-spacing-0 my-8 rounded-xl border border-zinc-700 overflow-hidden bg-surface;
+}
+
+.prose thead tr {
+    @apply bg-zinc-800/50;
+}
+
+.prose th {
+    @apply p-4 text-left font-bold border-b border-zinc-700 text-[10px] text-zinc-500 font-en tracking-widest uppercase;
+}
+
+.prose td {
+    @apply p-4 border-b border-zinc-700/50 text-zinc-300 text-sm font-en;
+}
+
+.prose tr:last-child td {
+    @apply border-b-0;
+}
+
+.prose td:not(:first-child),
+.prose th:not(:first-child) {
+    @apply text-right;
+}
+
+/* 1. iOSでの「白いチラつき」を物理的に防ぐ */
+html {
+    background-color: #09090b;
+    /* Zinc-950 */
+}
+
+/* 2. フェードアニメーションをスムーズにする定義 */
+/* Safariはデフォルトの動きだとガタつくことがあるため、明示的に指定 */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.3s;
+    /* 少しゆっくりにしてチラつきを目立たなくする */
+    mix-blend-mode: normal;
+    /* ブレンドモードによる発光を防ぐ */
+}

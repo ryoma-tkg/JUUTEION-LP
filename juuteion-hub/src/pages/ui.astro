@@ -1,0 +1,282 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Button from "../components/ui/Button.astro";
+import HeroCard from "../components/ui/HeroCard.astro";
+import ArchiveCard from "../components/ui/ArchiveCard.astro";
+import ListItem from "../components/ui/ListItem.astro";
+import Tag from "../components/ui/Tag.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro"; // 追加
+import Input from "../components/ui/Input.astro";
+import MemberCard from "../components/ui/MemberCard.astro";
+import Timetable from "../components/ui/Timetable.astro"; // ▼ 追加
+
+import avatarPlaceholder from "../assets/images/teaser.jpg";
+import topBg from "../assets/images/top-bg.jpg";
+
+// ▼ タイムテーブルのデモ用データ（現在の時間を中心に生成して光らせる）
+const now = new Date();
+const pad = (n: number) => n.toString().padStart(2, "0");
+const demoTimetable = [
+    { time: "23:00", content: "OPEN / DJ START", active: true }, // ← これが光ります
+    { time: "23:30", content: "Guest DJ Act" },
+    { time: "00:30", content: "Main Act (Live)" },
+    { time: "04:30", content: "CLOSE" },
+];
+
+// テスト用に既存画像をアバターとして使い回します
+
+// ▼追加: 画像をインポート (型エラー回避のため)
+// ※ src/assets/images/top-bg.jpg が存在することを確認してください
+---
+
+{/* isFluid=true を設定し、左右分割レイアウトを有効化 */}
+<Layout title="Design System" isFluid={true}>
+    <div class="flex flex-col lg:flex-row min-h-screen">
+        {/* ... (LEFT COLUMN は変更なし) ... */}
+        <aside
+            class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-zinc-900"
+        >
+            {/* Placeholder Background: src文字列を使用 */}
+            <div
+                class="absolute inset-0 bg-cover bg-center"
+                style={`background-image: url('${topBg.src}'); opacity: 0.2;`}
+            >
+            </div>
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+            {/* ... (Navigation などは変更なし) ... */}
+            <div
+                class="relative z-10 w-full h-full p-16 flex flex-col justify-between items-end text-right"
+            >
+                <div class="mt-8">
+                    <div class="text-right drop-shadow-xl">
+                        <h1
+                            class="text-5xl font-bold tracking-tighter text-white font-sans"
+                        >
+                            UI HUB <span
+                                class="block text-xl font-normal text-accent-blue tracking-[0.2em] mt-2 font-en"
+                                >V3.0 CATALOG</span
+                            >
+                        </h1>
+                    </div>
+                </div>
+
+                <nav class="flex flex-col gap-5 mb-8 drop-shadow-xl">
+                    {
+                        [
+                            { label: "TYPOGRAPHY", href: "#typography" },
+                            { label: "COLORS", href: "#colors" },
+                            { label: "CARDS", href: "#cards" },
+                            { label: "BUTTONS", href: "#buttons" },
+                            { label: "FORMS", href: "#forms" },
+                        ].map((item) => (
+                            <a
+                                href={item.href}
+                                class="group flex items-center justify-end gap-3 py-1"
+                            >
+                                <span class="text-lg font-en font-bold text-white/70 group-hover:text-white transition-colors duration-300 tracking-widest">
+                                    {item.label}
+                                </span>
+                                <span class="w-0 h-[2px] bg-accent-blue group-hover:w-6 transition-all duration-300 ease-out" />
+                            </a>
+                        ))
+                    }
+                </nav>
+            </div>
+        </aside>
+
+        {/* [RIGHT COLUMN] Content */}
+        <main
+            class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle"
+        >
+            <div class="w-full px-8 md:px-12 py-24 space-y-32">
+                {
+                    /* ... (Header, Typography, Colors セクションは変更なし) ... */
+                }
+
+                <section id="members" class="space-y-6">
+                    <div class="flex items-center gap-4 mb-6">
+                        {/* 3色グラデーションのバーで特別感を演出 */}
+                        <span
+                            class="w-2 h-8 bg-gradient-to-b from-accent-blue via-accent-yellow to-accent-red rounded-sm"
+                        ></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Core Members
+                        </h2>
+                    </div>
+
+                    <div class="pl-6">
+                        {/* Blue Member */}
+                        <MemberCard
+                            name="RYOMA"
+                            role="Organizer / Engineering"
+                            description="JUUTEIONの発起人。全てのシステムと構造を設計するエンジニア。"
+                            imageSrc={avatarPlaceholder.src}
+                            twitterUrl="https://twitter.com"
+                            color="blue"
+                        />
+
+                        {/* Yellow Member */}
+                        <MemberCard
+                            name="KEMO"
+                            role="Vibe Manager"
+                            description="フロアの空気を支配するムードメーカー。危険なほどの熱狂を作り出す。"
+                            imageSrc={avatarPlaceholder.src}
+                            twitterUrl="https://twitter.com"
+                            color="yellow"
+                        />
+
+                        {/* Red Member */}
+                        <MemberCard
+                            name="AKANE"
+                            role="Creative Director"
+                            description="視覚と鼓動をリンクさせるデザイナー。この空間の「赤」を象徴する。"
+                            imageSrc={avatarPlaceholder.src}
+                            twitterUrl="https://twitter.com"
+                            color="red"
+                        />
+                    </div>
+                </section>
+
+                {/* 3. Cards */}
+                <section id="cards" class="space-y-6">
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-accent-red rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Cards & Lists
+                        </h2>
+                    </div>
+
+                    <div class="space-y-8 pl-6">
+                        {/* ▼修正: image={topBg} を渡す */}
+                        <HeroCard
+                            title="Deep Night"
+                            subTitle="Vol.1 Launch"
+                            date="2024.12.31 SAT"
+                            time="OPEN 23:00"
+                            place="CLUB ASIA"
+                            price="¥3,500 / 1D"
+                            image={topBg}
+                        />
+
+                        <div class="grid grid-cols-2 gap-4">
+                            {/* ▼修正: image={topBg} を渡す */}
+                            <ArchiveCard
+                                title="Vol.0 Pre-Party"
+                                date="2024.10.31"
+                                place="MOGRA"
+                                image={topBg}
+                            />
+                            {/* ▼修正: image={topBg} を渡す */}
+                            <ArchiveCard
+                                title="Teaser Night"
+                                date="2024.08.15"
+                                place="WOMB"
+                                image={topBg}
+                            />
+                        </div>
+
+                        <div class="divide-y divide-subtle">
+                            <ListItem
+                                title="DJ GUEST"
+                                subTitle="Drum'n Bass"
+                                accentColor="blue"
+                            />
+                            <ListItem
+                                title="RESIDENT"
+                                subTitle="Techno"
+                                accentColor="yellow"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <section id="timetable" class="space-y-6">
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-zinc-500 rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Timetable System
+                        </h2>
+                    </div>
+                    <div
+                        class="pl-6 bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800"
+                    >
+                        <p class="text-xs text-zinc-500 mb-4 font-mono">
+                            ※プレビュー用（固定表示）
+                        </p>
+
+                        {
+                            /* ▼ 修正: eventDateを渡さないことで、自動更新を無効化し、強制アクティブ表示を維持 */
+                        }
+                        <Timetable items={demoTimetable} />
+                    </div>
+                </section>
+
+                {/* ... (Buttons, Forms, Footer は変更なし) ... */}
+                {/* 4. Buttons */}
+                <section id="buttons" class="space-y-6">
+                    {/* New Heading Style */}
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-accent-blue rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Buttons & Tags
+                        </h2>
+                    </div>
+
+                    <div class="space-y-4 pl-6">
+                        <Button variant="primary">チケットを予約</Button>
+                        <Button variant="secondary">詳しい情報を見る</Button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3 pt-6 pl-6">
+                        <Tag variant="default">Techno</Tag>
+                        <Tag variant="blue">House</Tag>
+                        <Tag variant="yellow">Bass</Tag>
+                        <Tag variant="red">SOLD OUT</Tag>
+                    </div>
+                </section>
+
+                {/* 5. Forms */}
+                <section id="forms" class="space-y-6">
+                    {/* New Heading Style */}
+                    <div class="flex items-center gap-4 mb-6">
+                        <span class="w-2 h-8 bg-subtle rounded-sm"></span>
+                        <h2
+                            class="text-2xl font-bold font-en tracking-widest text-white uppercase"
+                        >
+                            Form Elements
+                        </h2>
+                    </div>
+
+                    <div class="space-y-4 pl-6">
+                        <Input
+                            label="Email Address"
+                            type="email"
+                            placeholder="hello@juuteion.jp"
+                        />
+                        <Input
+                            label="Message"
+                            multiline
+                            rows="3"
+                            placeholder="お問い合わせ内容..."
+                        />
+                    </div>
+                </section>
+
+                <footer class="pt-16 pb-12 border-t border-subtle text-center">
+                    <p class="text-xs text-text-muted/30 font-mono font-en">
+                        JUUTEION DESIGN SYSTEM - V3.0
+                    </p>
+                </footer>
+            </div>
+        </main>
+    </div>
+</Layout>

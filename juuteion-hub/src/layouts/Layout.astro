@@ -1,0 +1,219 @@
+---
+// src/layouts/Layout.astro
+import "../styles/global.css";
+import { Image } from "astro:assets";
+import logoImage from "../assets/logo/jto_logo.svg";
+
+// ▼▼▼ 追加: 指定された画像をデフォルト定数として定義 ▼▼▼
+const DEFAULT_OG_IMAGE =
+    "https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/ogp%2Fogp.webp?alt=media&token=e2a48e1f-0431-446c-aceb-c59d3f0dfa31";
+
+interface Props {
+    title: string;
+    description?: string;
+    image?: string;
+    isFluid?: boolean;
+}
+
+const {
+    title,
+    description = "非日常なケモナーのためのDJパーティー︎︎獸酊音",
+    // ▼▼▼ 変更: 画像が渡されなかった場合、上記のデフォルト画像を使用する設定に変更 ▼▼▼
+    image = DEFAULT_OG_IMAGE,
+    isFluid = false,
+} = Astro.props;
+
+// ▼▼▼ 追加: 画像URLを絶対パスに変換する処理（念のため） ▼▼▼
+// 外部URL(https～)の場合はそのまま、内部パス(/～)の場合はドメインを付与して変換します
+const resolvedImage = new URL(image, Astro.url).href;
+---
+
+<!doctype html>
+<html lang="ja" class="scroll-smooth">
+    <head>
+        <script
+            async
+            src="https://www.googletagmanager.com/gtag/js?id=G-Z113YG2KNT"
+            is:inline></script>
+        <script is:inline>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
+
+            gtag("config", "G-Z113YG2KNT");
+        </script>
+        <meta charset="UTF-8" />
+        <meta name="description" content={description} />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="/favicon-light.svg"
+            media="(prefers-color-scheme: light)"
+        />
+
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="/favicon-dark.svg"
+            media="(prefers-color-scheme: dark)"
+        />
+
+        <meta name="generator" content={Astro.generator} />
+
+        <title>{title}</title>
+
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={Astro.url} />
+        <meta property="og:site_name" content="獸酊音 JUUTEION" />
+        <meta property="og:image" content={resolvedImage} />
+
+        <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+        <meta name="theme-color" content="#09090b" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@JUU_TEI_ON_25" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={resolvedImage} />
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;700&family=Montserrat:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <style>
+            .fade-content-enter {
+                opacity: 0;
+                transform: translateY(10px);
+                transition:
+                    opacity 0.8s ease-out,
+                    transform 0.8s ease-out;
+            }
+            .fade-content-active {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            @keyframes logo-shimmer {
+                0%,
+                100% {
+                    opacity: 0.5;
+                    filter: brightness(100%)
+                        drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+                    transform: scale(0.98);
+                }
+                50% {
+                    opacity: 1;
+                    filter: brightness(130%)
+                        drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+                    transform: scale(1);
+                }
+            }
+            .animate-logo-shimmer {
+                animation: logo-shimmer 3s ease-in-out infinite;
+            }
+        </style>
+    </head>
+
+    <body
+        class="bg-zinc-950 text-zinc-400 antialiased font-sans overflow-x-hidden min-h-screen"
+    >
+        <div
+            id="app-loader"
+            class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-zinc-950 transition-opacity duration-1000 ease-out pointer-events-none opacity-0"
+        >
+            <div class="w-32 animate-logo-shimmer">
+                <Image
+                    src={logoImage}
+                    alt="JUUTEION"
+                    class="w-full h-auto"
+                    loading="eager"
+                />
+            </div>
+        </div>
+
+        <div id="main-content" class="fade-content-enter">
+            <main
+                class:list={[
+                    "relative min-h-screen",
+                    !isFluid &&
+                        "max-w-[480px] mx-auto bg-zinc-950 shadow-2xl shadow-black",
+                ]}
+            >
+                <slot />
+            </main>
+        </div>
+
+        <script>
+            const MIN_LOADING_TIME = 1200;
+            const SESSION_KEY = "jto_session_visited";
+
+            const loader = document.getElementById("app-loader");
+            const content = document.getElementById("main-content");
+            const isFirstVisit = !sessionStorage.getItem(SESSION_KEY);
+
+            const onPageLoaded = () => {
+                if (isFirstVisit) {
+                    loader?.classList.remove(
+                        "opacity-0",
+                        "pointer-events-none",
+                    );
+                    setTimeout(() => {
+                        revealContent(true);
+                        sessionStorage.setItem(SESSION_KEY, "true");
+                    }, MIN_LOADING_TIME);
+                } else {
+                    revealContent(false);
+                }
+            };
+
+            const revealContent = (withCurtain: boolean) => {
+                if (withCurtain) {
+                    loader?.classList.add("opacity-0");
+                    setTimeout(() => {
+                        loader?.classList.add("pointer-events-none");
+                    }, 1000);
+                }
+                setTimeout(
+                    () => {
+                        content?.classList.add("fade-content-active");
+                    },
+                    withCurtain ? 500 : 100,
+                );
+            };
+
+            if (document.readyState === "complete") {
+                onPageLoaded();
+            } else {
+                window.addEventListener("load", onPageLoaded);
+            }
+
+            if (isFirstVisit && loader) {
+                loader.classList.remove("opacity-0", "pointer-events-none");
+            }
+        </script>
+    </body>
+</html>
+
+<style is:global>
+    ::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>
