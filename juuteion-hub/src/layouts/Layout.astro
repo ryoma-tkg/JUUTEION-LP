@@ -75,14 +75,18 @@ const resolvedImage = new URL(image, Astro.url).href;
         <meta property="og:type" content="website" />
         <meta property="og:url" content={Astro.url} />
         <meta property="og:site_name" content="獸酊音 JUUTEION" />
-
         <meta property="og:image" content={resolvedImage} />
+
+        <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+        <meta name="theme-color" content="#09090b" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@JUU_TEI_ON_25" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={resolvedImage} />
+
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -103,7 +107,6 @@ const resolvedImage = new URL(image, Astro.url).href;
                 transform: translateY(0);
             }
 
-            /* ▼ 変更: バーのアニメーションを削除し、ロゴの光るアニメーションを追加 */
             @keyframes logo-shimmer {
                 0%,
                 100% {
