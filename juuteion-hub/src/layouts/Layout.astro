@@ -31,6 +31,19 @@ const resolvedImage = new URL(image, Astro.url).href;
 <!doctype html>
 <html lang="ja" class="scroll-smooth">
     <head>
+        <script
+            async
+            src="https://www.googletagmanager.com/gtag/js?id=G-Z113YG2KNT"
+            is:inline></script>
+        <script is:inline>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
+
+            gtag("config", "G-Z113YG2KNT");
+        </script>
         <meta charset="UTF-8" />
         <meta name="description" content={description} />
         <meta
@@ -155,7 +168,6 @@ const resolvedImage = new URL(image, Astro.url).href;
                         "opacity-0",
                         "pointer-events-none",
                     );
-
                     setTimeout(() => {
                         revealContent(true);
                         sessionStorage.setItem(SESSION_KEY, "true");
