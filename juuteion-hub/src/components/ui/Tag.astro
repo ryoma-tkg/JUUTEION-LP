@@ -1,0 +1,33 @@
+---
+// ▼ 追加: HTMLの標準属性型をインポート
+import type { HTMLAttributes } from "astro/types";
+
+// ▼ 変更: Propsがspanタグの属性を継承するように修正
+interface Props extends HTMLAttributes<"span"> {
+    variant?: "default" | "blue" | "yellow" | "red" | "green";
+    // classはHTMLAttributesに含まれるため定義不要ですが、明示してもOK
+}
+
+// ▼ 変更: ...props (残りの属性) を受け取る
+const { variant = "default", class: className, ...props } = Astro.props;
+
+const styles = {
+    default: "border border-zinc-700 bg-zinc-800 text-zinc-400",
+    blue: "border border-accent-blue/30 bg-accent-blue/5 text-accent-blue",
+    yellow: "border border-accent-yellow/30 bg-accent-yellow/5 text-accent-yellow",
+    red: "border border-accent-red/30 bg-accent-red/5 text-accent-red",
+    green: "border border-emerald-500/30 bg-emerald-500/5 text-emerald-500",
+};
+---
+
+<span
+    class:list={[
+        "px-3 py-1 rounded-full text-[10px] font-bold tracking-widest inline-flex items-center justify-center transition-colors duration-300",
+        styles[variant],
+        className,
+    ]}
+    {...props}
+>
+    {/* ▲ 追加: 受け取ったidなどをspanタグに渡す */}
+    <slot />
+</span>

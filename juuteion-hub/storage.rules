@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ▼ 修正: Firestoreのadminsコレクションを参照して権限チェック
+    function isAdmin() {
+      return request.auth != null && 
+        firestore.exists(/databases/(default)/documents/admins/$(request.auth.token.email));
+    }
+
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

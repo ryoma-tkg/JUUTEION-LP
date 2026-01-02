@@ -1,0 +1,639 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Button from "../components/ui/Button.astro";
+import HeroCard from "../components/ui/HeroCard.astro";
+import ArchiveCard from "../components/ui/ArchiveCard.astro";
+import Tag from "../components/ui/Tag.astro";
+import SectionHeader from "../components/ui/SectionHeader.astro";
+import logo from "../assets/logo/jto_logo.svg";
+
+import { SOCIAL_LINKS } from "../config";
+
+import { db } from "../lib/firebase/client";
+import { collection, getDocs, query } from "firebase/firestore";
+import { getEventStatus, getEventDates } from "../lib/utils/eventStatus";
+import { formatDateJST } from "../lib/utils/date";
+
+import MemberCard from "../components/ui/MemberCard.astro";
+
+// テスト用に既存画像をアバターとして使い回します
+import avatarPlaceholder from "../assets/images/teaser.jpg";
+
+// SNSリンクの有効判定ロジック
+const isSocialActive = (url: string | undefined) =>
+	url && url !== "" && url !== "#";
+const xActive = isSocialActive(SOCIAL_LINKS.x);
+const instaActive = isSocialActive(SOCIAL_LINKS.instagram);
+const vrcActive = isSocialActive(SOCIAL_LINKS.vrcGroup);
+
+let heroEvent: any = null;
+let upcomingList: any[] = [];
+let archiveList: any[] = [];
+let sectionTitle = "● NEXT EVENT";
+let sectionColor = "yellow";
+try {
+	console.log("🔥 [Build] Fetching events from Firestore...");
+	const q = query(collection(db, "events"));
+	const snapshot = await getDocs(q);
+	console.log(`🔥 [Build] Fetched ${snapshot.size} events.`);
+
+	const allEvents = snapshot.docs.map((doc) => {
+		const data = doc.data() as any;
+		const dateObj = data.date?.toDate
+			? data.date.toDate()
+			: new Date(data.date);
+		const { start, end } = getEventDates(
+			dateObj,
+			data.time || "",
+			data.closeTime || "",
+		);
+
+		return {
+			id: doc.id,
+			...data,
+			date: dateObj,
+			startAt: start,
+			endAt: end,
+		};
+	});
+	const now = new Date();
+
+	const activeEvents = allEvents
+		.filter((e) => now < e.endAt && e.status !== "archive")
+		.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+	const finishedEvents = allEvents
+		.filter((e) => now >= e.endAt || e.status === "archive")
+		.sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
+	if (activeEvents.length > 0) {
+		const primary = activeEvents[0];
+		upcomingList = activeEvents.slice(1);
+		archiveList = finishedEvents;
+
+		const st = getEventStatus(
+			primary.date,
+			primary.time,
+			primary.closeTime,
+			primary.status,
+		);
+		heroEvent = { ...primary, statusObj: st };
+		if (st.label === "NOW OPEN") {
+			sectionTitle = "● NOW OPEN";
+			sectionColor = "red";
+		} else {
+			sectionTitle = "● NEXT EVENT";
+			sectionColor = "yellow";
+		}
+	} else if (finishedEvents.length > 0) {
+		const primary = finishedEvents[0];
+		archiveList = finishedEvents.slice(1);
+
+		const st = { label: "LATEST REPORT", color: "default", isLive: false };
+		heroEvent = { ...primary, statusObj: st };
+
+		sectionTitle = "● LATEST REPORT";
+		sectionColor = "default";
+	}
+} catch (e) {
+	console.error("Firestore fetch error:", e);
+}
+
+const getBgStyle = (imgUrl: string) => {
+	if (imgUrl) return `background-image: url('${imgUrl}')`;
+	return `background-color: #09090b; background-image: url('${logo.src}'); background-size: 30%; background-repeat: no-repeat; background-position: center; opacity: 0.5;`;
+};
+
+const imageToUse = heroEvent
+	? heroEvent.thumbnail || heroEvent.mainVisual || null
+	: null;
+
+const heroData = heroEvent
+	? {
+			...heroEvent,
+			formattedDate: formatDateJST(heroEvent.date),
+			bgStyle: getBgStyle(imageToUse),
+			imageToUse: imageToUse,
+			href: `/events/${heroEvent.id}`,
+			isoStart: heroEvent.startAt?.toISOString(),
+			isoEnd: heroEvent.endAt?.toISOString(),
+			manualStatus: heroEvent.status,
+			imagePosition: heroEvent.imagePosition,
+		}
+	: null;
+const isDev = import.meta.env.DEV;
+---
+
+<Layout title="獸酊音" isFluid={true}>
+	{
+		heroData ? (
+			<>
+				<div class="flex flex-col lg:flex-row min-h-screen">
+					{/* PC Side Visual */}
+					<aside class="hidden lg:block flex-1 h-screen sticky top-0 left-0 overflow-hidden border-r border-subtle min-w-0 bg-black">
+						<div
+							class="absolute inset-0 bg-cover bg-center"
+							style={heroData.bgStyle}
+						/>
+					</aside>
+
+					{/* Main Content */}
+					<main class="w-full lg:w-[700px] lg:shrink-0 bg-background relative z-10 border-l border-subtle">
+						{/* SP Header */}
+						<header class="lg:hidden flex justify-center items-center p-4 border-b border-subtle bg-background/80 backdrop-blur-md sticky top-0 z-50 h-16">
+							<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+								<img
+									src={logo.src}
+									alt="JUUTEION"
+									class="h-8 w-auto opacity-100 mb-2"
+								/>
+							</div>
+						</header>
+
+						{/* Hero Section */}
+						<section
+							id="top"
+							class="relative w-full aspect-[4/5] lg:aspect-[16/10] overflow-hidden border-b border-subtle bg-surface group"
+						>
+							<div
+								class="lg:hidden absolute inset-0 bg-cover bg-center"
+								style={heroData.bgStyle}
+							/>
+							<div class="lg:hidden absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+
+							{isDev && (
+								<div class="absolute top-4 left-4 z-50">
+									<a
+										href="/admin"
+										class="text-[10px] bg-zinc-800 text-white px-2 py-1 rounded border border-zinc-700 hover:bg-zinc-700 font-mono"
+									>
+										DEV: ADMIN
+									</a>
+								</div>
+							)}
+
+							<div class="absolute inset-0 p-8 md:p-12 lg:p-16 flex flex-col justify-end items-start">
+								<div class="w-full relative z-10">
+									<h2 class="flex flex-wrap items-baseline gap-x-4 text-5xl lg:text-6xl font-bold text-white tracking-tighter leading-none mb-6 drop-shadow-2xl lg:drop-shadow-none font-en">
+										<span>{heroData.title}</span>
+										<span class="text-3xl lg:text-4xl text-zinc-500 font-normal tracking-normal">
+											{heroData.subTitle}
+										</span>
+									</h2>
+
+									<div class="flex flex-wrap items-center gap-x-5 gap-y-2 mb-8 text-sm font-bold text-white tracking-widest font-en">
+										<div class="flex items-center gap-3">
+											<div
+												id="hero-status-container"
+												data-start={heroData.isoStart}
+												data-end={heroData.isoEnd}
+												data-manual={
+													heroData.manualStatus
+												}
+											>
+												<Tag
+													variant={
+														heroData.statusObj
+															.color as any
+													}
+													class="font-en"
+													id="hero-status-tag"
+												>
+													{heroData.statusObj.label}
+												</Tag>
+											</div>
+											<span>
+												{heroData.formattedDate}
+											</span>
+										</div>
+										<div class="flex items-center gap-3 opacity-90">
+											<span class="hidden sm:block w-px h-3 bg-white/50" />
+											<span>{heroData.time}</span>
+											<span class="w-px h-3 bg-white/50" />
+											<span>
+												<span class="relative -top-[1px] inline-block">
+													@
+												</span>{" "}
+												{heroData.place}
+											</span>
+										</div>
+									</div>
+									<div class="w-full sm:w-auto min-w-[200px]">
+										<Button
+											variant="primary"
+											href={heroData.href}
+										>
+											詳細をチェック
+										</Button>
+									</div>
+								</div>
+							</div>
+						</section>
+
+						<div class="w-full px-8 md:px-12 py-16 space-y-20">
+							{/* About Section */}
+							<section id="about" class="space-y-8">
+								<SectionHeader
+									title="About Us"
+									accentColor="blue"
+								/>
+								<div class="space-y-4">
+									<h3 class="text-3xl font-bold leading-tight font-sans pl-2 text-zinc-100">
+										ケモノ好きのための
+										<br />
+										酔いどれ交流系クラブイベント
+										<br />
+										獸酊音
+									</h3>
+								</div>
+								<div class="space-y-4 text-base text-text-muted leading-relaxed text-justify font-sans pl-2">
+									<p>
+										「クラブは初めて」という方も大歓迎。
+										<br />
+										音と酒に酔いしれる、非日常なケモナーのためのDJパーティー
+										<br />
+										ケモナーイベントの開催時期に合わせて不定期オープン！
+									</p>
+								</div>
+							</section>
+
+							{/* Events Section */}
+							<section id="events" class="space-y-10">
+								<SectionHeader
+									title="Information"
+									accentColor="yellow"
+								/>
+								<div class="space-y-12">
+									<div class="space-y-3">
+										<p
+											id="hero-section-title"
+											class={`text-sm font-bold tracking-widest font-en pl-1 ${sectionColor === "red" ? "text-accent-red" : sectionColor === "yellow" ? "text-accent-yellow" : "text-text-muted"}`}
+										>
+											{sectionTitle}
+										</p>
+										{/* HeroCard */}
+										<HeroCard
+											title={heroData.title}
+											subTitle={heroData.subTitle}
+											date={heroData.formattedDate}
+											time={heroData.time}
+											place={heroData.place}
+											price={heroData.price}
+											image={heroData.imageToUse}
+											href={heroData.href}
+											imagePosition={
+												heroData.imagePosition
+											}
+										/>
+									</div>
+
+									{/* UPCOMING LIST */}
+									{upcomingList.length > 0 && (
+										<div class="space-y-3">
+											<p class="text-sm text-text-muted font-bold tracking-widest font-en pl-1">
+												● UPCOMING
+											</p>
+											<div class="grid gap-3 grid-cols-1">
+												{upcomingList.map((event) => (
+													<HeroCard
+														mode="compact"
+														title={event.title}
+														subTitle={
+															event.subTitle
+														}
+														date={formatDateJST(
+															event.date,
+														)}
+														time={event.time}
+														place={event.place}
+														price={event.price}
+														image={
+															event.thumbnail ||
+															event.mainVisual ||
+															null
+														}
+														href={`/events/${event.id}`}
+														imagePosition={
+															event.imagePosition
+														}
+													/>
+												))}
+											</div>
+										</div>
+									)}
+
+									{/* ARCHIVE LIST */}
+									{archiveList.length > 0 && (
+										<div class="space-y-3">
+											<p class="text-sm text-text-muted font-bold tracking-widest font-en pl-1">
+												● ARCHIVE
+											</p>
+											<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+												{archiveList.map((event) => (
+													<ArchiveCard
+														title={event.title}
+														subTitle={
+															event.subTitle
+														}
+														date={formatDateJST(
+															event.date,
+														)}
+														place={event.place}
+														image={
+															event.thumbnail ||
+															event.mainVisual ||
+															null
+														}
+														href={`/events/${event.id}`}
+													/>
+												))}
+											</div>
+										</div>
+									)}
+								</div>
+							</section>
+
+							{/* Social Section */}
+							<section id="social" class="space-y-8">
+								<SectionHeader
+									title="Join the Floor"
+									accentColor="red"
+								/>
+								<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									{/* Official X */}
+									<a
+										href={
+											xActive ? SOCIAL_LINKS.x : undefined
+										}
+										target={xActive ? "_blank" : undefined}
+										rel={
+											xActive
+												? "noopener noreferrer"
+												: undefined
+										}
+										class={`group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${xActive ? "hover:border-accent-blue/50" : "opacity-50 cursor-not-allowed"}`}
+									>
+										<div class="flex items-center gap-4">
+											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-blue/30">
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="20"
+													height="20"
+													viewBox="0 0 24 24"
+													fill="currentColor"
+												>
+													<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+												</svg>
+											</div>
+											<div>
+												<>
+													<p class="text-base font-bold text-text-main font-en tracking-wide">
+														Official X
+													</p>
+													<p class="text-xs text-text-muted mt-0.5 font-en">
+														Latest Information
+													</p>
+												</>
+											</div>
+										</div>
+										<span
+											class={`text-xs text-subtle transition-colors font-en ${xActive ? "group-hover:text-accent-blue" : ""}`}
+										>
+											{xActive ? "VIEW →" : "準備中"}
+										</span>
+									</a>
+
+									{/* Instagram */}
+									<a
+										href={
+											instaActive
+												? SOCIAL_LINKS.instagram
+												: undefined
+										}
+										target={
+											instaActive ? "_blank" : undefined
+										}
+										rel={
+											instaActive
+												? "noopener noreferrer"
+												: undefined
+										}
+										class={`group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${instaActive ? "hover:border-accent-red/50" : "opacity-50 cursor-not-allowed"}`}
+									>
+										<div class="flex items-center gap-4">
+											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-red/30">
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="20"
+													height="20"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												>
+													<>
+														<rect
+															width="20"
+															height="20"
+															x="2"
+															y="2"
+															rx="5"
+															ry="5"
+														/>
+														<path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+														<line
+															x1="17.5"
+															x2="17.51"
+															y1="6.5"
+															y2="6.5"
+														/>
+													</>
+												</svg>
+											</div>
+											<div>
+												<>
+													<p class="text-base font-bold text-text-main font-en tracking-wide">
+														Instagram
+													</p>
+													<p class="text-xs text-text-muted mt-0.5 font-en">
+														Photo Archive
+													</p>
+												</>
+											</div>
+										</div>
+										<span
+											class={`text-xs text-subtle transition-colors font-en ${instaActive ? "group-hover:text-accent-red" : ""}`}
+										>
+											{instaActive ? "VIEW →" : "準備中"}
+										</span>
+									</a>
+
+									{/* VRChat */}
+									<a
+										href={
+											vrcActive
+												? SOCIAL_LINKS.vrcGroup
+												: undefined
+										}
+										target={
+											vrcActive ? "_blank" : undefined
+										}
+										rel={
+											vrcActive
+												? "noopener noreferrer"
+												: undefined
+										}
+										class={`sm:col-span-2 group bg-surface border border-subtle rounded-2xl p-6 flex items-center justify-between transition-colors duration-300 ${vrcActive ? "hover:border-accent-yellow/50" : "opacity-50 cursor-not-allowed"}`}
+									>
+										<div class="flex items-center gap-4">
+											<div class="w-12 h-12 rounded-full bg-background flex items-center justify-center text-text-muted group-hover:text-white transition-colors border border-subtle group-hover:border-accent-yellow/30">
+												<span class="font-bold text-xs font-en">
+													VRC
+												</span>
+											</div>
+											<div>
+												<>
+													<p class="text-base font-bold text-text-main font-en tracking-wide">
+														VRChat Group
+													</p>
+													<p class="text-xs text-text-muted mt-0.5 font-en">
+														Join the virtual venue
+													</p>
+												</>
+											</div>
+										</div>
+										<span
+											class={`text-xs text-subtle transition-colors font-en ${vrcActive ? "group-hover:text-accent-yellow" : ""}`}
+										>
+											{vrcActive ? "JOIN →" : "準備中"}
+										</span>
+									</a>
+								</div>
+							</section>
+
+							<section id="members" class="space-y-6">
+								<div class="flex items-center gap-4 mb-6">
+									<span class="w-1 h-5 bg-gradient-to-b from-accent-blue via-accent-yellow to-accent-red rounded-sm" />
+									<h2 class="text-2xl font-bold font-en tracking-widest text-white uppercase">
+										Crew
+									</h2>
+								</div>
+
+								{/* コンテナ側の space-y を削除し、MemberCard側の py-6 に任せる */}
+								<div class="pl-6">
+									<MemberCard
+										name="諸々"
+										role="Organizer / ILLUSTRATION"
+										description="暮らしのマルチメディア館 B館"
+										imageSrc="https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/icons%2Fmollow.webp?alt=media&token=96c2842c-f9f3-43f1-a195-79413602353c"
+										twitterUrl="https://x.com/mollowmollow"
+										color="blue"
+									/>
+									<MemberCard
+										name="ざな。"
+										role="Organizer / DESIGNER"
+										description="USB引っこ抜き野郎"
+										imageSrc="https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/icons%2Fxana.webp?alt=media&token=39133e68-d852-40c9-95ee-f4d24d28ce17"
+										twitterUrl="https://x.com/xana_kemo_2nd"
+										color="yellow"
+									/>
+									<MemberCard
+										name="時雨ゆん"
+										role="CREW / DJ"
+										description="インターネット師範代"
+										imageSrc="https://firebasestorage.googleapis.com/v0/b/juuteion-web.firebasestorage.app/o/icons%2Fshig.webp?alt=media&token=aed75535-9cbd-4fa1-b533-b1828fcce0e2"
+										twitterUrl="https://x.com/Yun_Shigure"
+										color="red"
+									/>
+								</div>
+							</section>
+
+							<footer class="text-center pt-10 pb-20 border-t border-subtle">
+								<p class="text-[10px] text-text-muted/30 font-mono font-en">
+									© 2025 JUUTEION. All Rights Reserved.
+								</p>
+							</footer>
+						</div>
+					</main>
+				</div>
+			</>
+		) : (
+			<div class="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white p-4 text-center">
+				{/* Empty State */}
+				<img
+					src={logo.src}
+					alt="JUUTEION"
+					class="w-24 opacity-50 mb-4"
+				/>
+				<p class="font-en tracking-widest text-sm text-zinc-500">
+					NO EVENTS SCHEDULED
+				</p>
+				{isDev && (
+					<a
+						href="/admin"
+						class="mt-8 text-xs border border-zinc-700 px-4 py-2 rounded hover:bg-zinc-800 transition-colors"
+					>
+						GO TO ADMIN
+					</a>
+				)}
+			</div>
+		)
+	}
+</Layout>
+
+<script>
+	const updateStatus = () => {
+		const container = document.getElementById("hero-status-container");
+		const tag = document.getElementById("hero-status-tag");
+		const sectionTitle = document.getElementById("hero-section-title");
+
+		if (!container || !tag || !sectionTitle) return;
+
+		const startStr = container.dataset.start;
+		const endStr = container.dataset.end;
+		const manual = container.dataset.manual;
+
+		if (!startStr || !endStr) return;
+		// 日時情報がない場合はスキップ
+
+		// 手動設定が "upcoming" 以外なら自動更新しない
+		if (manual && manual !== "upcoming") return;
+
+		const now = new Date();
+		const start = new Date(startStr);
+		const end = new Date(endStr);
+		// クラス定義
+		const baseClass =
+			"px-3 py-1 rounded-full text-[10px] font-bold tracking-widest inline-flex items-center justify-center transition-colors duration-300 font-en";
+		const yellowClass =
+			"border border-accent-yellow/30 bg-accent-yellow/5 text-accent-yellow";
+		const redClass =
+			"border border-accent-red/30 bg-accent-red/5 text-accent-red";
+		const defaultClass = "border border-zinc-700 bg-zinc-800 text-zinc-400";
+		if (now >= start && now < end) {
+			// NOW OPEN
+			if (tag.innerText !== "NOW OPEN") {
+				tag.innerText = "NOW OPEN";
+				tag.className = `${baseClass} ${redClass}`;
+
+				sectionTitle.innerText = "● NOW OPEN";
+				sectionTitle.className =
+					"text-sm font-bold tracking-widest font-en pl-1 text-accent-red";
+			}
+		} else if (now >= end) {
+			// FINISHED
+			if (tag.innerText !== "FINISHED") {
+				tag.innerText = "FINISHED";
+				tag.className = `${baseClass} ${defaultClass}`;
+				sectionTitle.innerText = "● FINISHED";
+				sectionTitle.className =
+					"text-sm font-bold tracking-widest font-en pl-1 text-text-muted";
+			}
+		}
+	};
+
+	document.addEventListener("astro:page-load", () => {
+		updateStatus();
+		setInterval(updateStatus, 60000);
+	});
+</script>

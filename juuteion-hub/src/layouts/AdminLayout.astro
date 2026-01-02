@@ -1,0 +1,221 @@
+---
+import "@fontsource/ibm-plex-sans-jp/400.css";
+import "@fontsource/ibm-plex-sans-jp/700.css";
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/700.css";
+import "../styles/global.css";
+
+import { ClientRouter } from "astro:transitions";
+
+interface Props {
+    title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ja" class="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="generator" content={Astro.generator} />
+        <title>{title} | JUUTEION Admin</title>
+        <ClientRouter />
+    </head>
+    <body
+        class="bg-zinc-950 text-zinc-100 antialiased min-h-screen flex flex-col"
+    >
+        <header
+            class="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex justify-between items-center"
+        >
+            <div class="flex items-center gap-6">
+                <h1
+                    class="font-en font-bold text-lg tracking-widest text-accent-blue"
+                >
+                    JUUTEION <span class="text-white">ADMIN</span>
+                </h1>
+
+                <a
+                    href="/"
+                    class="text-xs text-zinc-500 hover:text-white flex items-center gap-1 transition-colors"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path d="m15 18-6-6 6-6"></path></svg
+                    >
+                    BACK TO SITE
+                </a>
+            </div>
+
+            <div id="user-info" class="hidden items-center gap-4">
+                <span id="user-email" class="text-sm text-zinc-400 font-mono"
+                ></span>
+                <button
+                    id="deploy-btn"
+                    class="text-xs bg-accent-blue/10 text-accent-blue border border-accent-blue/30 px-3 py-1.5 rounded hover:bg-accent-blue/20 transition-colors flex items-center gap-2"
+                >
+                    <span
+                        class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"
+                    ></span>
+                    PUBLISH SITE
+                </button>
+                <div class="h-4 w-px bg-zinc-700 mx-2"></div>
+                <button
+                    id="logout-btn"
+                    class="text-xs border border-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-800 transition-colors"
+                    >LOGOUT</button
+                >
+            </div>
+        </header>
+
+        <main class="flex-1 p-6 overflow-auto">
+            <slot />
+        </main>
+
+        <script>
+            import { auth, functions, db } from "../lib/firebase/client"; // dbを追加
+            import { onAuthStateChanged, signOut } from "firebase/auth";
+            import { httpsCallable } from "firebase/functions";
+            import { doc, getDoc } from "firebase/firestore"; // Firestore関連を追加
+
+            console.log("🚀 [AdminLayout] script loaded. Waiting for auth...");
+
+            const initAuth = () => {
+                console.log("🔄 [AdminLayout] initAuth started");
+                const userEmailSpan = document.getElementById("user-email");
+                const userInfoDiv = document.getElementById("user-info");
+                const logoutBtn = document.getElementById("logout-btn");
+                const deployBtn = document.getElementById("deploy-btn");
+
+                // ▼ 修正: ソースコードへのメールアドレスのベタ書きを削除
+
+                const authInstance = auth;
+                if (!authInstance) {
+                    console.error(
+                        "❌ [AdminLayout] Firebase Auth is NOT initialized!",
+                    );
+                    return;
+                }
+
+                onAuthStateChanged(authInstance, async (user) => {
+                    const currentPath = window.location.pathname;
+                    console.log(
+                        "👤 [AdminLayout] Auth State Changed:",
+                        user ? user.email : "No User",
+                    );
+
+                    if (user) {
+                        console.log(
+                            "✅ [AdminLayout] User is logged in. Checking permissions via Firestore...",
+                        );
+
+                        // ▼ 修正: Firestoreのadminsコレクションを確認
+                        try {
+                            const adminRef = doc(
+                                db,
+                                "admins",
+                                user.email || "unknown",
+                            );
+                            const adminSnap = await getDoc(adminRef);
+
+                            if (!adminSnap.exists()) {
+                                console.warn(
+                                    "⛔ [AdminLayout] Access Denied (Not in admins list):",
+                                    user.email,
+                                );
+                                alert(
+                                    "アクセス権限がありません。（adminsコレクション未登録）",
+                                );
+                                await signOut(authInstance);
+                                return;
+                            }
+                        } catch (e) {
+                            console.error(
+                                "🔥 [AdminLayout] Permission Check Error:",
+                                e,
+                            );
+                            alert("権限チェックに失敗しました。");
+                            return;
+                        }
+
+                        console.log("🆗 [AdminLayout] Access Granted.");
+                        if (userEmailSpan)
+                            userEmailSpan.innerText = user.email || "";
+                        if (userInfoDiv) {
+                            userInfoDiv.classList.remove("hidden");
+                            userInfoDiv.classList.add("flex");
+                        }
+
+                        if (currentPath === "/admin/login") {
+                            window.location.href = "/admin";
+                        }
+                    } else {
+                        console.log(
+                            "⚪ [AdminLayout] No user. Redirecting to login if needed.",
+                        );
+                        if (currentPath !== "/admin/login") {
+                            window.location.href = "/admin/login";
+                        }
+                    }
+                });
+
+                logoutBtn?.addEventListener("click", async () => {
+                    console.log("👋 [AdminLayout] Logging out...");
+                    await signOut(authInstance);
+                    window.location.href = "/admin/login";
+                });
+
+                deployBtn?.addEventListener("click", async () => {
+                    console.log("🚀 [AdminLayout] Publish Button Clicked");
+                    if (
+                        !confirm(
+                            "本番サイトを更新しますか？\n（完了まで数分かかります）",
+                        )
+                    )
+                        return;
+
+                    if (!deployBtn) return;
+                    deployBtn.setAttribute("disabled", "true");
+                    deployBtn.innerText = "REQUESTING...";
+
+                    try {
+                        console.log(
+                            "📡 [AdminLayout] Calling Cloud Function: triggerGithubDispatch",
+                        );
+                        const triggerDeploy = httpsCallable(
+                            functions,
+                            "triggerGithubDispatch",
+                        );
+
+                        const result = await triggerDeploy();
+                        const data = result.data as any;
+
+                        console.log("✅ [AdminLayout] Deploy Result:", data);
+                        alert(
+                            "更新リクエストを送信しました！\n数分後に本番サイトが更新されます。",
+                        );
+                    } catch (e: any) {
+                        console.error("❌ [AdminLayout] Deploy Error:", e);
+                        alert("リクエストに失敗しました: " + e.message);
+                    } finally {
+                        deployBtn.removeAttribute("disabled");
+                        deployBtn.innerHTML =
+                            '<span class="w-2 h-2 rounded-full bg-accent-blue animate-pulse"></span> PUBLISH SITE';
+                    }
+                });
+            };
+
+            document.addEventListener("astro:page-load", initAuth);
+        </script>
+    </body>
+</html>

@@ -1,0 +1,66 @@
+---
+interface Props {
+    variant?: "primary" | "secondary";
+    href?: string;
+    class?: string;
+    icon?: boolean;
+}
+
+const {
+    variant = "primary",
+    href,
+    class: className,
+    icon = true,
+} = Astro.props;
+
+// rounded-xl で統一。
+// active:scale-[0.98] で「押し込む」感触だけ残し、浮遊感はゼロに。
+const baseStyles =
+    "group rounded-xl p-4 transition-colors duration-200 active:scale-[0.98] flex items-center justify-center gap-2 font-bold text-base tracking-wide cursor-pointer w-full border";
+
+const variants = {
+    // Primary: 影なし。背景の透明度を下げ、マットな板のように。
+    primary:
+        "bg-white/10 border-white/10 text-white hover:bg-white/20 hover:border-white/30",
+
+    // Secondary: 完全に背景に溶け込ませる。
+    secondary:
+        "bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700",
+};
+
+const Tag = href ? "a" : "button";
+---
+
+{/* ▼▼▼ 修正: data-astro-prefetch を追加して先読みを強制 ▼▼▼ */}
+<Tag
+    href={href}
+    class:list={[baseStyles, variants[variant], className]}
+    data-astro-prefetch={href ? "tap" : undefined}
+>
+    <slot />
+    {
+        icon && (
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
+            >
+                {variant === "primary" ? (
+                    <>
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </>
+                ) : (
+                    <path d="m9 18 6-6-6-6" />
+                )}
+            </svg>
+        )
+    }
+</Tag>
