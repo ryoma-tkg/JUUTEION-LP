@@ -1,12 +1,11 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Firestoreと同じ管理者判定関数
+    
+    // ▼ 修正: Firestoreのadminsコレクションを参照して権限チェック
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.email == 'takagi.buckup@gmail.com' || 
-        request.auth.token.email == 'juuteion.events@gmail.com'
-      );
+      return request.auth != null && 
+        firestore.exists(/databases/(default)/documents/admins/$(request.auth.token.email));
     }
 
     match /{allPaths=**} {
